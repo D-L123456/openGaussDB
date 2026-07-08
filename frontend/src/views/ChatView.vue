@@ -73,12 +73,23 @@
             </button>
           </div>
         </div>
-        <div v-if="recommendations.length > 0" class="rec-sidebar">
+        <div v-if="recommendations.length > 0 || learningStore.recommendations.length > 0" class="rec-sidebar">
           <div class="rec-sidebar-header">
             <span>🎯 智能推荐</span>
             <button class="btn-toggle" @click="recCollapsed = !recCollapsed">{{ recCollapsed ? '◀' : '▶' }}</button>
           </div>
           <div v-if="!recCollapsed" class="rec-sidebar-body">
+            <div v-if="learningStore.recommendations.length > 0" class="rec-section-label">个性化建议</div>
+            <div
+              v-for="rec in learningStore.recommendations.slice(0, 3)"
+              :key="rec.id"
+              class="rec-card rec-card-personal"
+              @click="handleLearningRec(rec)"
+            >
+              <div class="rec-card-title">{{ rec.title }}</div>
+              <div class="rec-card-reason">{{ rec.description }}</div>
+            </div>
+            <div v-if="recommendations.length > 0" class="rec-section-label">知识推荐</div>
             <div
               v-for="(rec, idx) in recommendations"
               :key="idx"
@@ -100,6 +111,7 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat'
+import { useLearningStore } from '../stores/learning'
 import { recommendationApi, type Recommendation } from '../api'
 import { marked } from 'marked'
 
@@ -109,6 +121,7 @@ marked.setOptions({
 })
 
 const chatStore = useChatStore()
+const learningStore = useLearningStore()
 const router = useRouter()
 const inputText = ref('')
 const messagesContainer = ref<HTMLElement>()
@@ -118,6 +131,7 @@ const recCollapsed = ref(false)
 onMounted(() => {
   chatStore.loadSessions().catch(console.error)
   loadRecommendations()
+  learningStore.fetchRecommendations()
 })
 
 watch(() => chatStore.messages.length, async () => {
@@ -187,6 +201,14 @@ async function loadRecommendations() {
 
 function goToKnowledge(rec: Recommendation) {
   router.push({ path: '/knowledge-tree', query: { nodeId: rec.node_id || undefined } })
+}
+
+function handleLearningRec(rec: any) {
+  if (rec.action_type === 'goto_challenge') router.push('/challenge')
+  else if (rec.action_type === 'goto_knowledge') router.push('/knowledge-tree')
+  else if (rec.action_type === 'goto_sql') router.push('/sql-practice')
+  else if (rec.action_type === 'review_error') router.push('/profile')
+  else router.push('/profile')
 }
 </script>
 
@@ -381,6 +403,19 @@ function goToKnowledge(rec: Recommendation) {
   font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+.rec-card-personal {
+  border-left-color: #8b5cf6;
+  background: #faf5ff;
+}
+
+.rec-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 4px 0 2px;
+  margin-top: 4px;
 }
 
 .quick-questions {

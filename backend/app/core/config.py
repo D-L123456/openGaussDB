@@ -1,4 +1,9 @@
+import os
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -6,7 +11,7 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = True
 
-    database_url: str = "sqlite+aiosqlite:///./opengauss_agent.db"
+    database_url: str = f"sqlite+aiosqlite:///{BACKEND_DIR / 'opengauss_agent.db'}"
 
     modelarts_api_key: str = ""
     modelarts_base_url: str = ""

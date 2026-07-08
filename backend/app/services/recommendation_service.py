@@ -53,7 +53,7 @@ class RecommendationService:
     async def get_recommendations(self, db: AsyncSession) -> list[dict]:
         stats = await self._get_practice_stats(db)
         if not stats["total_submissions"]:
-            return self._get_default_recommendations(db)
+            return await self._get_default_recommendations(db)
 
         knowledge_map = await self._get_knowledge_map(db)
 

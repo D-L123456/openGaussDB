@@ -18,6 +18,16 @@ const router = createRouter({
       name: 'knowledge-tree',
       component: () => import('../views/KnowledgeTreeView.vue'),
     },
+    {
+      path: '/challenge',
+      name: 'challenge',
+      component: () => import('../views/ChallengeView.vue'),
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+    },
   ],
 })
 

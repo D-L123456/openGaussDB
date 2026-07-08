@@ -1,9 +1,69 @@
 import os
 import re
+import hashlib
 from dataclasses import dataclass
 
 import docx
+from lxml import etree
 from app.core.config import settings
+
+NSMAP = {
+    "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+}
+
+IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "images")
+
+
+def natural_sort_key(s: str) -> list:
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+    return [convert(c) for c in re.split(r'(\d+)', s)]
+
+
+def extract_images_from_para(para, doc, chapter_name, para_idx) -> list[str]:
+    image_refs = []
+    blips = para._element.findall('.//a:blip', NSMAP)
+    for blip in blips:
+        rid = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+        if not rid:
+            continue
+        try:
+            rel = doc.part.rels[rid]
+            image_blob = rel.target_part.blob
+            content_type = rel.target_part.content_type
+            ext_map = {
+                'image/png': '.png',
+                'image/jpeg': '.jpg',
+                'image/gif': '.gif',
+                'image/bmp': '.bmp',
+                'image/tiff': '.tiff',
+                'image/x-emf': '.emf',
+                'image/x-wmf': '.wmf',
+            }
+            ext = ext_map.get(content_type, '.png')
+            img_hash = hashlib.md5(image_blob).hexdigest()[:12]
+            img_filename = f"{chapter_name}_{para_idx}_{img_hash}{ext}"
+            img_path = os.path.join(IMAGES_DIR, img_filename)
+            if not os.path.exists(img_path):
+                os.makedirs(IMAGES_DIR, exist_ok=True)
+                with open(img_path, 'wb') as f:
+                    f.write(image_blob)
+            image_refs.append(f"[图片: /images/{img_filename}]")
+        except Exception:
+            pass
+    return image_refs
+
+
+def clean_figure_references(text: str) -> str:
+    text = re.sub(r'如[图图]\s*\d+[\.\d]*\s*所[示述]', '', text)
+    text = re.sub(r'[见参看][图图]\s*\d+[\.\d]*', '', text)
+    text = re.sub(r'[上下]图\s*\d+[\.\d]*', '', text)
+    text = re.sub(r'图\s*\d+[\.\d]*\s*[所示]', '', text)
+    text = re.sub(r'\s{2,}', ' ', text)
+    return text.strip()
 
 
 @dataclass
@@ -26,7 +86,7 @@ class DocumentProcessor:
             raise ValueError("未配置文档目录，请设置DOCX_DIR环境变量")
 
         chunks: list[DocumentChunk] = []
-        files = sorted([f for f in os.listdir(doc_dir) if f.endswith(".docx")])
+        files = sorted([f for f in os.listdir(doc_dir) if f.endswith(".docx")], key=natural_sort_key)
 
         for filename in files:
             filepath = os.path.join(doc_dir, filename)
@@ -43,10 +103,9 @@ class DocumentProcessor:
         current_title = ""
         current_content_parts: list[str] = []
 
-        for para in doc.paragraphs:
+        for para_idx, para in enumerate(doc.paragraphs):
             text = para.text.strip()
-            if not text:
-                continue
+            image_refs = extract_images_from_para(para, doc, chapter_name, para_idx)
 
             style_name = para.style.name if para.style else ""
 
@@ -77,7 +136,15 @@ class DocumentProcessor:
                 current_title = text
                 current_content_parts = [text]
             else:
-                current_content_parts.append(text)
+                parts_to_add = []
+                if image_refs:
+                    parts_to_add.extend(image_refs)
+                if text:
+                    cleaned = clean_figure_references(text)
+                    if cleaned:
+                        parts_to_add.append(cleaned)
+                if parts_to_add:
+                    current_content_parts.extend(parts_to_add)
 
         if current_content_parts:
             content = "\n".join(current_content_parts)

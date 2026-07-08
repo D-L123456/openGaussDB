@@ -71,6 +71,7 @@ async def ask_question(
         message=request.message,
         session_id=request.session_id,
         db=db,
+        user_id="default_user",
     )
     return ChatResponse(
         session_id=result["session_id"],

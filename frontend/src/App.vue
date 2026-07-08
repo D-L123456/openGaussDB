@@ -18,6 +18,14 @@
           <span class="nav-icon">🌳</span>
           <span>知识树</span>
         </router-link>
+        <router-link to="/challenge" class="nav-item" :class="{ active: $route.path === '/challenge' }">
+          <span class="nav-icon">⚔️</span>
+          <span>勇闯数据库</span>
+        </router-link>
+        <router-link to="/profile" class="nav-item" :class="{ active: $route.path === '/profile' }">
+          <span class="nav-icon">📊</span>
+          <span>学习画像</span>
+        </router-link>
       </nav>
     </aside>
     <main class="main-content">

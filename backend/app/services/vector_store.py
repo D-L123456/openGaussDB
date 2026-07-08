@@ -1,17 +1,22 @@
+import logging
+import os
 from typing import Optional
 
 import chromadb
 from app.core.config import settings
 from app.services.document_processor import DocumentChunk
 
+logger = logging.getLogger(__name__)
+
 
 class VectorStore:
     def __init__(self):
-        self.client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+        self.client = chromadb.Client()
         self.collection = self.client.get_or_create_collection(
             name=settings.chroma_collection_name,
             metadata={"hnsw:space": "cosine"}
         )
+        self._loaded = False
 
     def add_documents(self, chunks: list[DocumentChunk]) -> int:
         if not chunks:
@@ -90,6 +95,25 @@ class VectorStore:
             name=settings.chroma_collection_name,
             metadata={"hnsw:space": "cosine"}
         )
+        self._loaded = False
+
+    def load_from_documents(self, docx_dir: str | None = None) -> int:
+        if self._loaded and self.collection.count() > 0:
+            return self.collection.count()
+
+        doc_dir = docx_dir or settings.docx_dir
+        if not doc_dir or not os.path.exists(doc_dir):
+            logger.warning(f"文档目录不存在: {doc_dir}")
+            return 0
+
+        logger.info(f"从文档加载向量数据: {doc_dir}")
+        from app.services.document_processor import DocumentProcessor
+        processor = DocumentProcessor()
+        chunks = processor.extract_documents(doc_dir)
+        count = self.add_documents(chunks)
+        self._loaded = True
+        logger.info(f"已加载 {count} 个向量")
+        return count
 
 
 vector_store = VectorStore()

@@ -124,6 +124,85 @@ export const recommendationApi = {
   getRecommendations: () => api.get<{ recommendations: Recommendation[] }>('/recommendations'),
 }
 
+export interface LearningEvent {
+  id: string
+  event_type: string
+  level: number | null
+  part: number | null
+  detail: Record<string, any> | null
+  duration_seconds: number | null
+  created_at: string
+}
+
+export interface UserProfile {
+  user_id: string
+  ability_scores: Record<string, any>
+  weak_points: Record<string, any> | null
+  error_patterns: Record<string, any> | null
+  learning_style: string
+  total_learning_time: number
+  streak_days: number
+  last_active_at: string | null
+  challenge_progress: Record<string, any> | null
+  badges: Record<string, any> | null
+}
+
+export interface LearningRecommendation {
+  id: string
+  rec_type: string
+  title: string
+  description: string
+  priority: number
+  action_type: string | null
+  action_target: string | null
+  is_read: boolean
+  created_at: string
+}
+
+export interface ErrorPattern {
+  id: string
+  category: string
+  description: string
+  occurrence_count: number
+  ability_dim: string | null
+  last_seen_at: string
+}
+
+export interface AbilitySnapshot {
+  id: string
+  ability_scores: Record<string, any>
+  trigger_event: string
+  created_at: string
+}
+
+export interface LearningDashboard {
+  profile: UserProfile
+  recent_recommendations: LearningRecommendation[]
+  top_error_patterns: ErrorPattern[]
+  ability_history: AbilitySnapshot[]
+  timeline: Record<string, any>[]
+}
+
+export const learningApi = {
+  recordEvent: (data: { event_type: string; level?: number; part?: number; detail?: Record<string, any>; duration_seconds?: number }) =>
+    api.post<LearningEvent>('/learning/events', data),
+  getEvents: (eventType?: string, limit?: number) =>
+    api.get<LearningEvent[]>('/learning/events', { params: { event_type: eventType, limit } }),
+  getProfile: () => api.get<UserProfile>('/learning/profile'),
+  getRecommendations: (refresh?: boolean) =>
+    api.get<LearningRecommendation[]>('/learning/recommendations', { params: { refresh } }),
+  markRecommendationRead: (recId: string) =>
+    api.put(`/learning/recommendations/${recId}/read`),
+  dismissRecommendation: (recId: string) =>
+    api.put(`/learning/recommendations/${recId}/dismiss`),
+  getErrorPatterns: () => api.get<ErrorPattern[]>('/learning/error-patterns'),
+  getAbilityHistory: (limit?: number) =>
+    api.get<AbilitySnapshot[]>('/learning/ability-history', { params: { limit } }),
+  getTimeline: (days?: number) =>
+    api.get('/learning/timeline', { params: { days } }),
+  getDashboard: () => api.get<LearningDashboard>('/learning/dashboard'),
+}
+
 export const adminApi = {
   ingest: (docxDir?: string) => api.post('/admin/ingest', null, { params: { docx_dir: docxDir } }),
   ingestStatus: () => api.get('/admin/ingest/status'),

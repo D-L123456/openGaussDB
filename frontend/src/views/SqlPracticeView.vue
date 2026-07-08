@@ -123,9 +123,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sqlApi, type SqlQuestion, type SqlSubmitResult, type SqlPracticeRecommendation } from '../api'
+import { useLearningStore } from '../stores/learning'
 import { marked } from 'marked'
 
 const router = useRouter()
+const learningStore = useLearningStore()
 const questions = ref<SqlQuestion[]>([])
 const selectedQuestion = ref<SqlQuestion | null>(null)
 const userSql = ref('')
@@ -160,6 +162,17 @@ async function submitAnswer() {
     const { data } = await sqlApi.submit(selectedQuestion.value.id, userSql.value)
     submitResult.value = data
     recommendations.value = data.recommendations || []
+    learningStore.recordEvent(
+      data.is_correct ? 'sql_pass' : 'sql_error',
+      undefined, undefined,
+      {
+        question_id: selectedQuestion.value.id,
+        is_correct: data.is_correct,
+        score: data.score,
+        category: data.is_correct ? undefined : 'SQL语法/逻辑错误',
+        ability_dim: 'SQL编程与优化',
+      }
+    )
   } catch (e) {
     submitResult.value = {
       id: '',

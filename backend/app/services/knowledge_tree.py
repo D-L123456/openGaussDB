@@ -1,7 +1,10 @@
 import os
+import re
 import logging
+import hashlib
 
 import docx
+from lxml import etree
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -10,13 +13,72 @@ from app.services.vector_store import vector_store
 
 logger = logging.getLogger(__name__)
 
+NSMAP = {
+    "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+}
+
+IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app", "data", "images")
+
+
+def natural_sort_key(s: str) -> list:
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+    return [convert(c) for c in re.split(r'(\d+)', s)]
+
+
+def extract_images_from_para(para, doc, chapter_name, para_idx) -> list[str]:
+    image_refs = []
+    blips = para._element.findall('.//a:blip', NSMAP)
+    for blip in blips:
+        rid = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+        if not rid:
+            continue
+        try:
+            rel = doc.part.rels[rid]
+            image_blob = rel.target_part.blob
+            content_type = rel.target_part.content_type
+            ext_map = {
+                'image/png': '.png',
+                'image/jpeg': '.jpg',
+                'image/gif': '.gif',
+                'image/bmp': '.bmp',
+                'image/tiff': '.tiff',
+                'image/x-emf': '.emf',
+                'image/x-wmf': '.wmf',
+            }
+            ext = ext_map.get(content_type, '.png')
+            img_hash = hashlib.md5(image_blob).hexdigest()[:12]
+            img_filename = f"{chapter_name}_{para_idx}_{img_hash}{ext}"
+            img_path = os.path.join(IMAGES_DIR, img_filename)
+            if not os.path.exists(img_path):
+                with open(img_path, 'wb') as f:
+                    f.write(image_blob)
+            url_safe_name = img_filename.replace(" ", "%20")
+            image_refs.append(f"![图片](/images/{url_safe_name})")
+        except Exception as e:
+            logger.warning(f"Failed to extract image: {e}")
+    return image_refs
+
+
+def clean_figure_references(text: str) -> str:
+    text = re.sub(r'如[图图]\s*\d+[\.\d]*\s*所[示述]', '', text)
+    text = re.sub(r'[见参看][图图]\s*\d+[\.\d]*', '', text)
+    text = re.sub(r'[上下]图\s*\d+[\.\d]*', '', text)
+    text = re.sub(r'图\s*\d+[\.\d]*\s*[所示]', '', text)
+    text = re.sub(r'\s{2,}', ' ', text)
+    return text.strip()
+
 
 class KnowledgeTreeService:
     def __init__(self):
         self.vector_store = vector_store
 
     async def build_tree(self, docx_dir: str, db: AsyncSession) -> dict:
-        files = sorted([f for f in os.listdir(docx_dir) if f.endswith(".docx")])
+        os.makedirs(IMAGES_DIR, exist_ok=True)
+        files = sorted([f for f in os.listdir(docx_dir) if f.endswith(".docx")], key=natural_sort_key)
         total_nodes = 0
 
         for filename in files:
@@ -37,16 +99,9 @@ class KnowledgeTreeService:
                 if current_h3_id and current_h3_parts:
                     content = "\n".join(current_h3_parts).strip()
                     if content:
-                        node = KnowledgeNode(
-                            id=current_h3_id,
-                            parent_id=current_h2_id or chapter_node_id,
-                            chapter=chapter_name,
-                            section=f"{current_h2_title} > {current_h3_title}" if current_h2_title else current_h3_title,
-                            title=current_h3_title,
-                            content=content,
-                            sort_order=total_nodes - 1,
-                        )
-                        await db.merge(node)
+                        existing = await db.get(KnowledgeNode, current_h3_id)
+                        if existing:
+                            existing.content = content
 
             chapter_node_id = await self._upsert_node(
                 db=db,
@@ -59,10 +114,10 @@ class KnowledgeTreeService:
             )
             total_nodes += 1
 
-            for para in doc.paragraphs:
+            for para_idx, para in enumerate(doc.paragraphs):
                 text = para.text.strip()
-                if not text:
-                    continue
+
+                image_refs = extract_images_from_para(para, doc, chapter_name, para_idx)
 
                 style_name = para.style.name if para.style else ""
 
@@ -102,19 +157,34 @@ class KnowledgeTreeService:
                     total_nodes += 1
 
                 else:
+                    parts_to_add = []
+
+                    if image_refs:
+                        parts_to_add.extend(image_refs)
+
+                    if text:
+                        cleaned = clean_figure_references(text)
+                        if cleaned:
+                            parts_to_add.append(cleaned)
+
+                    if not parts_to_add:
+                        continue
+
                     if current_h3_id:
-                        current_h3_parts.append(text)
+                        current_h3_parts.extend(parts_to_add)
                     elif current_h2_id:
-                        current_h2_parts.append(text)
+                        current_h2_parts.extend(parts_to_add)
                     else:
-                        chapter_content_parts.append(text)
+                        chapter_content_parts.extend(parts_to_add)
 
             await flush_h3()
 
             if current_h2_id and current_h2_parts:
                 h2_node = await db.get(KnowledgeNode, current_h2_id)
                 if h2_node:
-                    h2_node.content = "\n".join(current_h2_parts).strip()
+                    existing_content = h2_node.content or ""
+                    new_content = "\n".join(current_h2_parts).strip()
+                    h2_node.content = existing_content + "\n" + new_content if existing_content else new_content
 
             if chapter_content_parts:
                 ch_node = await db.get(KnowledgeNode, chapter_node_id)
