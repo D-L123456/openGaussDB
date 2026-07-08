@@ -15,7 +15,10 @@ class LLMService:
         self._model = settings.modelarts_model
 
     @property
-    def is_configured(self) -> bool:
+    def _chat_url(self) -> str:
+        if self._base_url.endswith("/chat/completions"):
+            return self._base_url
+        return f"{self._base_url}/chat/completions"
         return bool(self._api_key and self._base_url and self._model)
 
     async def chat(
@@ -42,7 +45,7 @@ class LLMService:
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=120.0, write=10.0, pool=10.0)) as client:
                 response = await client.post(
-                    f"{self._base_url}/chat/completions",
+                    self._chat_url,
                     headers=headers,
                     json=payload,
                 )
@@ -86,7 +89,7 @@ class LLMService:
             async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=120.0, write=10.0, pool=10.0)) as client:
                 async with client.stream(
                     "POST",
-                    f"{self._base_url}/chat/completions",
+                    self._chat_url,
                     headers=headers,
                     json=payload,
                 ) as response:
