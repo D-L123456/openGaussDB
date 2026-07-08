@@ -1,119 +1,134 @@
 import logging
-import os
 from typing import Optional
 
 import chromadb
 from app.core.config import settings
-from app.services.document_processor import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
 
 class VectorStore:
     def __init__(self):
-        self.client = chromadb.Client()
-        self.collection = self.client.get_or_create_collection(
-            name=settings.chroma_collection_name,
-            metadata={"hnsw:space": "cosine"}
-        )
-        self._loaded = False
+        self._chroma_client = chromadb.Client()
+        self._embed_collection = self._chroma_client.get_or_create_collection("embed-helper")
 
-    def add_documents(self, chunks: list[DocumentChunk]) -> int:
+    def _encode(self, texts: list[str]) -> list[list[float]]:
+        self._embed_collection.upsert(ids=[f"q{i}" for i in range(len(texts))], documents=texts)
+        results = self._embed_collection.get(ids=[f"q{i}" for i in range(len(texts))], include=["embeddings"])
+        self._chroma_client.delete_collection("embed-helper")
+        self._embed_collection = self._chroma_client.get_or_create_collection("embed-helper")
+        return results["embeddings"]
+
+    def _get_conn(self):
+        import psycopg2
+        dsn = settings.database_url
+        if "+asyncpg" in dsn:
+            dsn = dsn.replace("+asyncpg", "")
+        return psycopg2.connect(dsn)
+
+    async def add_documents(self, chunks: list) -> int:
+        return self._add_documents_sync(chunks)
+
+    def _add_documents_sync(self, chunks: list) -> int:
         if not chunks:
             return 0
-
-        ids = []
-        documents = []
-        metadatas = []
-
+        conn = self._get_conn()
+        cur = conn.cursor()
+        inserted = 0
         for i, chunk in enumerate(chunks):
             chunk_id = f"{chunk.chapter}_{chunk.section}_{i}"
-            ids.append(chunk_id)
-            documents.append(chunk.content)
-            metadatas.append({
-                "chapter": chunk.chapter,
-                "section": chunk.section,
-                "title": chunk.title,
-                "type": chunk.metadata.get("type", "text"),
-            })
+            emb = self._encode([chunk.content])[0]
+            emb_str = "[" + ",".join(str(v) for v in emb) + "]"
+            cur.execute(
+                """INSERT INTO knowledge_chunks (id, chapter, section, title, content, chunk_type, embedding)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s::vector) ON CONFLICT (id) DO NOTHING""",
+                (chunk_id, chunk.chapter, chunk.section, chunk.title, chunk.content,
+                 chunk.metadata.get("type", "text"), emb_str)
+            )
+            inserted += 1
+        conn.commit()
+        cur.close()
+        conn.close()
+        return inserted
 
-        batch_size = 100
-        for start in range(0, len(ids), batch_size):
-            end = start + batch_size
-            self.collection.upsert(
-                ids=ids[start:end],
-                documents=documents[start:end],
-                metadatas=metadatas[start:end],
+    async def search(self, query: str, top_k: int = 5, chapter_filter: Optional[str] = None) -> list[dict]:
+        return self._search_sync(query, top_k, chapter_filter)
+
+    def _search_sync(self, query: str, top_k: int = 5, chapter_filter: Optional[str] = None) -> list[dict]:
+        query_emb = self._encode([query])[0]
+        emb_str = "[" + ",".join(str(v) for v in query_emb) + "]"
+
+        conn = self._get_conn()
+        cur = conn.cursor()
+
+        if chapter_filter:
+            cur.execute(
+                """SELECT content, chapter, section, title, chunk_type,
+                          1 - (embedding <=> %s::vector) AS similarity
+                   FROM knowledge_chunks
+                   WHERE chapter LIKE %s
+                   ORDER BY embedding <=> %s::vector
+                   LIMIT %s""",
+                (emb_str, f"%{chapter_filter}%", emb_str, top_k)
+            )
+        else:
+            cur.execute(
+                """SELECT content, chapter, section, title, chunk_type,
+                          1 - (embedding <=> %s::vector) AS similarity
+                   FROM knowledge_chunks
+                   ORDER BY embedding <=> %s::vector
+                   LIMIT %s""",
+                (emb_str, emb_str, top_k)
             )
 
-        return len(ids)
+        results = []
+        for row in cur.fetchall():
+            results.append({
+                "content": row[0],
+                "metadata": {
+                    "chapter": row[1],
+                    "section": row[2],
+                    "title": row[3],
+                    "type": row[4],
+                },
+                "score": float(row[5]),
+            })
 
-    def search(self, query: str, top_k: int = 5, chapter_filter: Optional[str] = None) -> list[dict]:
-        where_filter = None
-        if chapter_filter:
-            where_filter = {"chapter": {"$contains": chapter_filter}}
+        cur.close()
+        conn.close()
+        return results
 
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=min(top_k, self.collection.count()) if self.collection.count() > 0 else top_k,
-            where=where_filter,
-            include=["documents", "metadatas", "distances"]
-        )
+    async def get_all_metadata(self) -> list[dict]:
+        return self._get_all_metadata_sync()
 
-        search_results = []
-        if results and results["documents"]:
-            for i, doc in enumerate(results["documents"][0]):
-                search_results.append({
-                    "content": doc,
-                    "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                    "score": 1 - results["distances"][0][i] if results["distances"] else 0.0,
-                })
-
-        return search_results
-
-    def get_all_metadata(self) -> list[dict]:
-        results = self.collection.get(include=["metadatas"])
-        if not results or not results["metadatas"]:
-            return []
-
-        seen = set()
-        unique_metadata = []
-        for meta in results["metadatas"]:
-            key = f"{meta.get('chapter', '')}_{meta.get('section', '')}_{meta.get('title', '')}"
-            if key not in seen:
-                seen.add(key)
-                unique_metadata.append(meta)
-
-        return unique_metadata
+    def _get_all_metadata_sync(self) -> list[dict]:
+        conn = self._get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT chapter, section, title FROM knowledge_chunks")
+        results = [{"chapter": r[0], "section": r[1], "title": r[2]} for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return results
 
     def count(self) -> int:
-        return self.collection.count()
+        conn = self._get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM knowledge_chunks WHERE embedding IS NOT NULL")
+        count = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        return count
 
     def reset(self):
-        self.client.delete_collection(settings.chroma_collection_name)
-        self.collection = self.client.get_or_create_collection(
-            name=settings.chroma_collection_name,
-            metadata={"hnsw:space": "cosine"}
-        )
-        self._loaded = False
+        conn = self._get_conn()
+        cur = conn.cursor()
+        cur.execute("TRUNCATE knowledge_chunks")
+        conn.commit()
+        cur.close()
+        conn.close()
 
     def load_from_documents(self, docx_dir: str | None = None) -> int:
-        if self._loaded and self.collection.count() > 0:
-            return self.collection.count()
-
-        doc_dir = docx_dir or settings.docx_dir
-        if not doc_dir or not os.path.exists(doc_dir):
-            logger.warning(f"文档目录不存在: {doc_dir}")
-            return 0
-
-        logger.info(f"从文档加载向量数据: {doc_dir}")
-        from app.services.document_processor import DocumentProcessor
-        processor = DocumentProcessor()
-        chunks = processor.extract_documents(doc_dir)
-        count = self.add_documents(chunks)
-        self._loaded = True
-        logger.info(f"已加载 {count} 个向量")
-        return count
+        return self.count()
 
 
 vector_store = VectorStore()

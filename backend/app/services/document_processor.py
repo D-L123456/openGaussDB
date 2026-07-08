@@ -76,9 +76,9 @@ class DocumentChunk:
 
 
 class DocumentProcessor:
-    def __init__(self):
-        self.chunk_size = settings.chunk_size
-        self.chunk_overlap = settings.chunk_overlap
+    def __init__(self, chunk_size: int = 500, chunk_overlap: int = 100):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
 
     def extract_documents(self, docx_dir: str | None = None) -> list[DocumentChunk]:
         doc_dir = docx_dir or settings.docx_dir

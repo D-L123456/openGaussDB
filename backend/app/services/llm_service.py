@@ -19,6 +19,9 @@ class LLMService:
         if self._base_url.endswith("/chat/completions"):
             return self._base_url
         return f"{self._base_url}/chat/completions"
+
+    @property
+    def is_configured(self) -> bool:
         return bool(self._api_key and self._base_url and self._model)
 
     async def chat(

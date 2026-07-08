@@ -11,18 +11,11 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = True
 
-    database_url: str = f"sqlite+aiosqlite:///{BACKEND_DIR / 'opengauss_agent.db'}"
+    database_url: str = "postgresql+asyncpg://postgres@localhost:5432/opengauss_agent"
 
     modelarts_api_key: str = ""
     modelarts_base_url: str = ""
     modelarts_model: str = ""
-
-    chroma_persist_dir: str = "./chroma_data"
-    chroma_collection_name: str = "opengauss_knowledge"
-
-    embedding_model: str = "BAAI/bge-small-zh-v1.5"
-    chunk_size: int = 500
-    chunk_overlap: int = 100
 
     docx_dir: str = ""
 

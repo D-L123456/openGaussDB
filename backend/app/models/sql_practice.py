@@ -11,15 +11,13 @@ class SqlQuestion(Base):
     __tablename__ = "sql_questions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    chapter: Mapped[str] = mapped_column(String(50))
-    title: Mapped[str] = mapped_column(String(200))
-    description: Mapped[str] = mapped_column(Text)
-    difficulty: Mapped[str] = mapped_column(String(20), default="medium")
+    chapter: Mapped[str] = mapped_column(String(200))
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    difficulty: Mapped[str] = mapped_column(String(20), default="easy")
     hint: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reference_sql: Mapped[str] = mapped_column(Text)
+    reference_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
     setup_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
-    verify_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
-    expected_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

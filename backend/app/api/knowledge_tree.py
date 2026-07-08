@@ -30,7 +30,7 @@ async def search_knowledge(request: KnowledgeSearchRequest):
 
 @router.get("/chapters")
 async def list_chapters():
-    metadata = vector_store.get_all_metadata()
+    metadata = await vector_store.get_all_metadata()
     chapters = {}
     for meta in metadata:
         chapter = meta.get("chapter", "")
@@ -44,7 +44,9 @@ async def list_chapters():
 
 @router.get("/stats")
 async def get_stats():
+    metadata = await vector_store.get_all_metadata()
+    chapters = list({m.get("chapter", "") for m in metadata if m.get("chapter")})
     return {
         "total_documents": vector_store.count(),
-        "chapters": len(vector_store.get_all_metadata()),
+        "chapters": len(chapters),
     }

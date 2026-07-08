@@ -41,7 +41,7 @@ async def ingest_documents(
             chunks = processor.extract_documents(dir_path)
             logger.info(f"提取到 {len(chunks)} 个文档块")
 
-            count = vector_store.add_documents(chunks)
+            count = await vector_store.add_documents(chunks)
             logger.info(f"已存入 {count} 个向量")
 
             await knowledge_tree_service.build_tree(dir_path, db)

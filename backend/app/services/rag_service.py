@@ -109,7 +109,7 @@ class RAGService:
                 "needs_clarification": True,
             }
 
-        search_results = self.vector_store.search(message, top_k=5)
+        search_results = await self.vector_store.search(message, top_k=5)
 
         context_parts = []
         sources = []
@@ -192,7 +192,7 @@ class RAGService:
             return False, ""
 
     async def chat_stream(self, message: str, session_id: str | None = None):
-        search_results = self.vector_store.search(message, top_k=5)
+        search_results = await self.vector_store.search(message, top_k=5)
 
         context_parts = []
         sources = []

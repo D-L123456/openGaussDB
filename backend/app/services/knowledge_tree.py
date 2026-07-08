@@ -262,11 +262,12 @@ class KnowledgeTreeService:
         return root_nodes
 
     async def search_knowledge(self, query: str, top_k: int = 5) -> list[dict]:
-        results = self.vector_store.search(query, top_k=top_k)
+        results = await self.vector_store.search(query, top_k=top_k)
         search_results = []
         for r in results:
             meta = r["metadata"]
             search_results.append({
+                "node_id": "",
                 "chapter": meta.get("chapter", ""),
                 "section": meta.get("section", ""),
                 "title": meta.get("title", ""),

@@ -14,18 +14,14 @@ from app.services.vector_store import vector_store
 logger = logging.getLogger(__name__)
 
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), "data", "images")
-DOCX_DIR = r"C:\Users\11523\Desktop\教材文稿"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"启动 {settings.app_name} v{settings.app_version}")
     await init_db()
-
-    logger.info("加载向量数据...")
-    count = vector_store.load_from_documents(DOCX_DIR)
-    logger.info(f"向量数据加载完成: {count} 个向量")
-
+    count = vector_store.count()
+    logger.info(f"PostgreSQL向量数据: {count} 条")
     yield
     logger.info("关闭应用")
 
