@@ -7,7 +7,7 @@
           <div class="tree-header">
             <h3>OpenGauss 知识体系</h3>
             <div class="tree-stats">
-              <span>{{ stats.totalDocuments }} 个知识块</span>
+              <span>{{ stats.total_documents }} 个知识块</span>
               <span>{{ stats.chapters }} 个章节</span>
             </div>
           </div>
@@ -88,7 +88,7 @@ const treeData = ref<KnowledgeNode[]>([])
 const selectedNode = ref<KnowledgeNode | null>(null)
 const searchQuery = ref('')
 const searchResults = ref<any[]>([])
-const stats = ref({ totalDocuments: 0, chapters: 0 })
+const stats = ref({ total_documents: 0, chapters: 0 })
 const recommendedIds = ref<Set<string>>(new Set())
 
 const breadcrumbs = computed(() => {
