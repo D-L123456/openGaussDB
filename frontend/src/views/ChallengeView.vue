@@ -23,21 +23,44 @@
             <div class="level-desc">仿写INSERT和UPDATE语句，完成银行业务数据的录入与维护</div>
             <div class="level-difficulty">{{ completedLevels.has(3) ? '✅ 已通关' : '难度：⭐⭐⭐' }}</div>
           </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(4), completed: completedLevels.has(4) }" @click="showLevelIntro(4)">
+            <div class="level-num">第四关</div>
+            <div class="level-name">视图与存储过程</div>
+            <div class="level-desc">拖拽代码片段拼装视图创建和存储过程定义</div>
+            <div class="level-difficulty">{{ completedLevels.has(4) ? '✅ 已通关' : '难度：⭐⭐⭐' }}</div>
+          </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(5), completed: completedLevels.has(5) }" @click="showLevelIntro(5)">
+            <div class="level-num">第五关</div>
+            <div class="level-name">触发器与事务</div>
+            <div class="level-desc">连接触发器流程节点，理解事务执行流程</div>
+            <div class="level-difficulty">{{ completedLevels.has(5) ? '✅ 已通关' : '难度：⭐⭐⭐⭐' }}</div>
+          </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(6), completed: completedLevels.has(6) }" @click="showLevelIntro(6)">
+            <div class="level-num">第六关</div>
+            <div class="level-name">性能调优</div>
+            <div class="level-desc">阅读慢查询场景，手动编写优化SQL语句提升性能</div>
+            <div class="level-difficulty">{{ completedLevels.has(6) ? '✅ 已通关' : '难度：⭐⭐⭐⭐' }}</div>
+          </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(7), completed: completedLevels.has(7) }" @click="showLevelIntro(7)">
+            <div class="level-num">第七关</div>
+            <div class="level-name">数据库安全与权限</div>
+            <div class="level-desc">补全用户角色创建、权限授予与回收的SQL命令</div>
+            <div class="level-difficulty">{{ completedLevels.has(7) ? '✅ 已通关' : '难度：⭐⭐⭐' }}</div>
+          </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(8), completed: completedLevels.has(8) }" @click="showLevelIntro(8)">
+            <div class="level-num">第八关</div>
+            <div class="level-name">备份与恢复</div>
+            <div class="level-desc">拖拽排列gs_dump和gs_restore命令的正确执行步骤</div>
+            <div class="level-difficulty">{{ completedLevels.has(8) ? '✅ 已通关' : '难度：⭐⭐⭐' }}</div>
+          </div>
+          <div class="level-card" :class="{ active: !completedLevels.has(9), completed: completedLevels.has(9) }" @click="showLevelIntro(9)">
+            <div class="level-num">第九关</div>
+            <div class="level-name">综合实战：Bug猎人</div>
+            <div class="level-desc">找出SQL代码中的Bug并修正，考验综合能力</div>
+            <div class="level-difficulty">{{ completedLevels.has(9) ? '✅ 已通关' : '难度：⭐⭐⭐⭐⭐' }}</div>
+          </div>
         </div>
 
-        <div class="ability-section">
-          <div class="ability-header">
-            <span class="ability-title">能力画像</span>
-            <span class="ability-score-badge">综合评分：{{ abilityScore }} / 100</span>
-          </div>
-          <svg viewBox="0 0 300 300" class="radar-svg-main">
-            <polygon v-for="r in [80, 60, 40, 20]" :key="r" :points="radarGrid(r)" fill="none" stroke="#e2e8f0" stroke-width="1"/>
-            <line v-for="i in 8" :key="'l'+i" :x1="150" :y1="150" :x2="radarPoint(i, 80).x" :y2="radarPoint(i, 80).y" stroke="#e2e8f0" stroke-width="1"/>
-            <polygon :points="radarArea()" fill="rgba(59,130,246,0.2)" stroke="#3b82f6" stroke-width="2"/>
-            <circle v-for="i in 8" :key="'d'+i" :cx="radarPoint(i, abilities[i-1] * 0.8).x" :cy="radarPoint(i, abilities[i-1] * 0.8).y" r="4" fill="#3b82f6"/>
-            <text v-for="(dim, i) in abilityDims" :key="'t'+i" :x="radarPoint(i+1, 95).x" :y="radarPoint(i+1, 95).y" text-anchor="middle" fill="#374151" font-size="10" font-weight="500">{{ dim }}</text>
-          </svg>
-        </div>
 
         <div v-if="showIntroModal" class="modal-overlay" @click.self="showIntroModal=false">
           <div class="intro-modal">
@@ -923,6 +946,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.challenge-view { display: flex; flex-direction: column; height: 100%; }
+.challenge-view .content-area { flex: 1; overflow-y: auto; }
 .level-select { max-width: 800px; margin: 0 auto; }
 .ability-section { margin-top: 32px; text-align: center; padding: 24px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); }
 .ability-header { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
