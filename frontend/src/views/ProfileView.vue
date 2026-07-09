@@ -257,7 +257,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.profile-view { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.profile-view { padding: 24px; max-width: 1200px; margin: 0 auto; height: 100%; overflow-y: auto; }
 .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .profile-header h2 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0; }
 .loading { text-align: center; padding: 60px; color: #64748b; }

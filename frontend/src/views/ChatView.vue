@@ -69,7 +69,7 @@
               rows="1"
             ></textarea>
             <button class="btn btn-primary" @click="handleSend" :disabled="chatStore.loading || !inputText.trim()">
-              发送
+              {{ chatStore.loading ? '思考中...' : '发送' }}
             </button>
           </div>
         </div>

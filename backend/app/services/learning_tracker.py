@@ -25,13 +25,6 @@ DEFAULT_ABILITY_SCORES = {dim: 10 for dim in ABILITY_DIMS}
 LEVEL_BOOST = {
     1: {"数据库设计": 25, "数据库对象管理": 10},
     2: {"基础环境搭建": 20, "openGauss运维": 10, "数据库开发": 15, "数据库设计": 10, "SQL编程与优化": 15, "数据库对象管理": 20},
-    3: {"数据库开发": 20, "数据库设计": 5, "SQL编程与优化": 30, "数据库对象管理": 10},
-    4: {"数据库开发": 15, "SQL编程与优化": 20, "数据库对象管理": 15, "数据库优化与调优": 10},
-    5: {"数据库开发": 10, "SQL编程与优化": 15, "数据库优化与调优": 20, "数据库对象管理": 10},
-    6: {"数据库优化与调优": 30, "openGauss运维": 15, "数据库迁移与同步": 10, "基础环境搭建": 10, "SQL编程与优化": 10},
-    7: {"openGauss运维": 20, "基础环境搭建": 5, "数据库优化与调优": 10, "数据库对象管理": 20, "数据库迁移与同步": 5},
-    8: {"openGauss运维": 25, "基础环境搭建": 10, "数据库优化与调优": 10, "数据库迁移与同步": 10, "数据库对象管理": 5},
-    9: {"数据库开发": 15, "数据库设计": 10, "SQL编程与优化": 20, "数据库优化与调优": 10, "openGauss运维": 10, "数据库对象管理": 10, "数据库迁移与同步": 5, "基础环境搭建": 5},
 }
 
 EVENT_TYPE_DIM_MAP = {
@@ -88,9 +81,6 @@ class LearningTracker:
             await self._apply_challenge_boost(db, profile, event)
             await self._update_challenge_progress(profile, event)
 
-        if event.event_type == "challenge_part_pass":
-            await self._apply_challenge_part_boost(db, profile, event)
-
         if event.event_type in ("challenge_error", "sql_error"):
             await self._update_weak_points(profile, event)
 
@@ -104,13 +94,6 @@ class LearningTracker:
     ):
         if not event.level:
             return
-
-        progress = profile.challenge_progress or {}
-        level_key = str(event.level)
-        if progress.get(level_key, {}).get("status") == "passed":
-            logger.info(f"Level {event.level} already passed, skip boost")
-            return
-
         boost = LEVEL_BOOST.get(event.level, {})
         scores = profile.ability_scores or dict(DEFAULT_ABILITY_SCORES)
 
@@ -156,27 +139,6 @@ class LearningTracker:
 
         profile.challenge_progress = progress
         flag_modified(profile, "challenge_progress")
-
-    async def _apply_challenge_part_boost(
-        self, db: AsyncSession, profile: UserProfile, event: LearningEvent
-    ):
-        if not event.level:
-            return
-        boost = LEVEL_BOOST.get(event.level, {})
-        if not boost:
-            return
-        scores = profile.ability_scores or dict(DEFAULT_ABILITY_SCORES)
-        detail = event.detail or {}
-        total_parts = detail.get("total_parts", 1)
-        fraction = 1.0 / total_parts
-
-        for dim, base_boost in boost.items():
-            if dim in scores:
-                part_boost = max(1, int(base_boost * fraction))
-                scores[dim] = min(100, scores.get(dim, 10) + part_boost)
-
-        profile.ability_scores = scores
-        flag_modified(profile, "ability_scores")
 
     async def _update_weak_points(self, profile: UserProfile, event: LearningEvent):
         weak = profile.weak_points or {}
