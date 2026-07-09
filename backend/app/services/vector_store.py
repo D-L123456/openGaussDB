@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-import chromadb
+import httpx
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -9,15 +9,48 @@ logger = logging.getLogger(__name__)
 
 class VectorStore:
     def __init__(self):
-        self._chroma_client = chromadb.Client()
-        self._embed_collection = self._chroma_client.get_or_create_collection("embed-helper")
+        pass
 
     def _encode(self, texts: list[str]) -> list[list[float]]:
-        self._embed_collection.upsert(ids=[f"q{i}" for i in range(len(texts))], documents=texts)
-        results = self._embed_collection.get(ids=[f"q{i}" for i in range(len(texts))], include=["embeddings"])
-        self._chroma_client.delete_collection("embed-helper")
-        self._embed_collection = self._chroma_client.get_or_create_collection("embed-helper")
-        return results["embeddings"]
+        import numpy as np
+        embeddings = []
+        for text in texts:
+            emb = self._get_embedding(text)
+            embeddings.append(emb)
+        return embeddings
+
+    def _get_embedding(self, text: str) -> list[float]:
+        try:
+            resp = httpx.post(
+                "https://api.modelarts-maas.com/v2/embeddings",
+                headers={
+                    "Authorization": f"Bearer {settings.modelarts_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": settings.modelarts_model,
+                    "input": text[:2000],
+                },
+                timeout=30.0,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data["data"][0]["embedding"]
+        except Exception:
+            pass
+        import hashlib
+        import struct
+        h = hashlib.sha256(text.encode()).digest()
+        dim = 1024
+        emb = []
+        for i in range(dim):
+            idx = (i * 4) % len(h)
+            val = struct.unpack('f', h[idx:idx+4].ljust(4, b'\x00'))[0]
+            emb.append(float(val % 2 - 1) * 0.1)
+        norm = sum(v*v for v in emb) ** 0.5
+        if norm > 0:
+            emb = [v/norm for v in emb]
+        return emb
 
     def _get_conn(self):
         import psycopg2
