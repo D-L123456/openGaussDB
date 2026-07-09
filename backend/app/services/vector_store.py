@@ -7,7 +7,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIM = 4687
+EMBEDDING_DIM = 384
 
 
 class VectorStore:
@@ -20,7 +20,10 @@ class VectorStore:
         for i in range(EMBEDDING_DIM):
             idx = (i * 4) % (len(h) - 3)
             val = struct.unpack('f', h[idx:idx+4])[0]
-            emb.append(float(val % 2 - 1) * 0.1)
+            v = float(val % 2 - 1) * 0.1
+            if v != v or abs(v) == float('inf'):
+                v = 0.0
+            emb.append(v)
         norm = sum(v * v for v in emb) ** 0.5
         if norm > 0:
             emb = [v / norm for v in emb]

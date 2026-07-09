@@ -2,7 +2,7 @@ import json
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, Integer
 
 from app.models.sql_practice import SqlQuestion, SqlSubmission
 from app.models.knowledge import KnowledgeNode
@@ -113,7 +113,7 @@ class RecommendationService:
                 SqlQuestion.tags,
                 func.count(SqlSubmission.id).label("attempt_count"),
                 func.avg(SqlSubmission.score).label("avg_score"),
-                func.max(SqlSubmission.is_correct).label("ever_correct"),
+                func.max(SqlSubmission.is_correct.cast(Integer)).label("ever_correct"),
                 func.min(SqlSubmission.created_at).label("first_attempt"),
                 func.max(SqlSubmission.created_at).label("last_attempt"),
             )
