@@ -61,19 +61,14 @@
               </div>
             </div>
             <div v-if="selectedNode.content" class="node-content markdown-body" v-html="renderMarkdown(selectedNode.content)"></div>
-            <div v-else class="no-content">
-              <div class="no-content-icon">📄</div>
-              <p>该节点暂无详细内容</p>
-              <p class="hint">请点击子节点查看具体知识点</p>
-            </div>
-            <div v-if="sectionQuiz" class="section-quiz-block">
+            <div v-else-if="isQuizNode" class="quiz-detail">
               <div class="quiz-block-header">
                 <span class="quiz-block-icon">✎</span>
-                <span>本节检测</span>
+                <span>章节测试</span>
                 <span v-if="sectionQuizPassed" class="quiz-passed-badge">已通过</span>
               </div>
               <div v-if="!sectionQuizPassed" class="quiz-block-body">
-                <div class="quiz-q-item" v-for="(q, qi) in sectionQuiz.questions" :key="qi">
+                <div class="quiz-q-item" v-for="(q, qi) in sectionQuiz!.questions" :key="qi">
                   <div class="quiz-q-header">
                     <span class="quiz-q-num">第{{ qi + 1 }}题</span>
                     <span class="quiz-q-type">{{ q.type === 'single' ? '单选' : q.type === 'multi' ? '多选' : q.type === 'judge' ? '判断' : '填空' }}</span>
@@ -101,6 +96,11 @@
                 </div>
                 <button class="btn btn-primary quiz-submit-btn" @click="checkSectionQuiz">提交答案</button>
               </div>
+            </div>
+            <div v-else class="no-content">
+              <div class="no-content-icon">📄</div>
+              <p>该节点暂无详细内容</p>
+              <p class="hint">请点击子节点查看具体知识点</p>
             </div>
           </div>
           <div v-else class="empty-detail">
@@ -155,16 +155,23 @@ function toggleExpand(nodeId: string) {
 
 const sectionQuizKey = computed(() => {
   if (!selectedNode.value) return ''
-  const ch = (selectedNode.value.chapter || '').replace(/-已同步$/, '')
-  const sec = selectedNode.value.section || ''
-  return ch + '||' + sec
+  if (isQuizNode.value) {
+    const parentId = selectedNode.value.id.replace('quiz-', '')
+    const parent = findNodeById(parentId, treeData.value)
+    if (!parent) return ''
+    const ch = (parent.chapter || '').replace(/-已同步$/, '')
+    const sec = parent.section || ''
+    return ch + '||' + sec
+  }
+  return ''
 })
 
+const isQuizNode = computed(() => selectedNode.value?.id.startsWith('quiz-'))
+
 const sectionQuiz = computed<SectionQuiz | null>(() => {
-  if (!selectedNode.value) return null
-  const ch = (selectedNode.value.chapter || '').replace(/-已同步$/, '')
-  const sec = selectedNode.value.section || ''
-  return quizMap[ch + '||' + sec] || null
+  if (!selectedNode.value || !isQuizNode.value) return null
+  const key = sectionQuizKey.value
+  return quizMap[key] || null
 })
 
 const quizMap: Record<string, SectionQuiz> = {
@@ -274,6 +281,44 @@ watch(() => route.query.nodeId, (newNodeId) => {
 async function loadTree() {
   const { data } = await knowledgeApi.getTree()
   treeData.value = data.nodes
+  injectQuizNodes(treeData.value)
+}
+
+function findNodeById(id: string, nodes: KnowledgeNode[]): KnowledgeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    if (node.children?.length) {
+      const found = findNodeById(id, node.children)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+function injectQuizNodes(nodes: KnowledgeNode[]) {
+  for (const node of nodes) {
+    if (node.children?.length) {
+      injectQuizNodes(node.children)
+    }
+    const ch = (node.chapter || '').replace(/-已同步$/, '')
+    const sec = node.section || ''
+    if (quizMap[ch + '||' + sec]) {
+      if (!node.children) node.children = []
+      const alreadyHas = node.children.some(c => c.id === 'quiz-' + node.id)
+      if (!alreadyHas) {
+        node.children.push({
+          id: 'quiz-' + node.id,
+          parent_id: node.id,
+          chapter: node.chapter,
+          section: node.section,
+          title: '章节测试',
+          content: null,
+          sort_order: 9999,
+          children: [],
+        })
+      }
+    }
+  }
 }
 
 async function loadStats() {
@@ -296,7 +341,7 @@ function selectNode(node: KnowledgeNode) {
   selectedNode.value = node
   searchResults.value = []
   resetQuizState()
-  loadQuizPassedState()
+  if (node.id.startsWith('quiz-')) loadQuizPassedState()
 }
 
 function expandAndSelectNode(nodeId: string, nodes: KnowledgeNode[]): boolean {
@@ -567,10 +612,8 @@ function renderMarkdown(content: string): string {
   font-size: 14px;
 }
 
-.section-quiz-block {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid var(--border);
+.quiz-detail {
+  padding-top: 8px;
 }
 
 .quiz-block-header {
