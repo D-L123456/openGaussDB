@@ -197,7 +197,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? '🎉' : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? '恭喜通关！ER图已正确还原！' : '部分组件位置不正确，请重试' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -286,7 +289,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l2Part > 4 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l2Part > 4 ? '恭喜通关！所有SQL命令填写正确！' : '本部分通过！进入下一部分') : '部分空缺填写不正确，请检查红色标记处' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l2Part > 4 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -338,7 +344,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l3Task > 3 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l3Task > 3 ? '恭喜通关！所有数据操作完成！' : '回答正确！进入下一题') : l3Feedback || 'SQL语句不正确，请检查语法和逻辑' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l3Task > 3 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -393,7 +402,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l4Task > 3 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l4Task > 3 ? '恭喜通关！视图与存储过程拼装完成！' : '回答正确！进入下一题') : '代码片段顺序不正确，请重试' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l4Task > 3 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -448,7 +460,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l5Task > 2 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l5Task > 2 ? '恭喜通关！触发器与事务流程掌握！' : '回答正确！进入下一题') : '步骤顺序不正确，请重试' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l5Task > 2 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -489,7 +504,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l6Task > 3 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l6Task > 3 ? '恭喜通关！性能调优技能掌握！' : '回答正确！进入下一题') : l6Feedback || 'SQL优化不正确，请检查' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l6Task > 3 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -558,7 +576,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l7Part > 3 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l7Part > 3 ? '恭喜通关！数据库安全与权限掌握！' : '本部分通过！进入下一部分') : '部分空缺填写不正确，请检查红色标记处' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l7Part > 3 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -613,7 +634,10 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l8Task > 2 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l8Task > 2 ? '恭喜通关！备份与恢复流程掌握！' : '回答正确！进入下一题') : '步骤顺序不正确，请重试' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+              <button v-if="modalSuccess && l8Task > 2 && currentLevel < 9" class="btn btn-primary" @click="goNextLevel">下一关 →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -654,7 +678,9 @@
           <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
             <div class="modal-icon">{{ modalSuccess ? (l9Task > 3 ? '🎉' : '✅') : '❌' }}</div>
             <div class="modal-text">{{ modalSuccess ? (l9Task > 3 ? '恭喜通关！Bug猎人称号达成！' : '回答正确！进入下一题') : l9Feedback || '修正不正确，请再仔细检查' }}</div>
-            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+            <div class="modal-actions">
+              <button class="btn" @click="showModal=false">确定</button>
+            </div>
           </div>
         </div>
       </div>
@@ -867,15 +893,16 @@ function startLevel(level: number) {
   currentLevel.value = level
   levelStartTime.value[level] = Date.now()
   store.recordEvent('challenge_start', level)
+  const saved = loadProgress(level)
   if (level === 1) resetLevel1()
-  if (level === 2) resetLevel2()
-  if (level === 3) resetLevel3()
-  if (level === 4) resetLevel4()
-  if (level === 5) resetLevel5()
-  if (level === 6) resetLevel6()
-  if (level === 7) resetLevel7()
-  if (level === 8) resetLevel8()
-  if (level === 9) resetLevel9()
+  if (level === 2) { resetLevel2(); if (saved?.part) l2Part.value = saved.part }
+  if (level === 3) { resetLevel3(); if (saved?.task) l3Task.value = saved.task }
+  if (level === 4) { resetLevel4(); if (saved?.task) l4Task.value = saved.task }
+  if (level === 5) { resetLevel5(); if (saved?.task) l5Task.value = saved.task }
+  if (level === 6) { resetLevel6(); if (saved?.task) l6Task.value = saved.task }
+  if (level === 7) { resetLevel7(); if (saved?.part) l7Part.value = saved.part }
+  if (level === 8) { resetLevel8(); if (saved?.task) l8Task.value = saved.task }
+  if (level === 9) { resetLevel9(); if (saved?.task) l9Task.value = saved.task }
 }
 
 function resetLevel1() {
@@ -930,6 +957,7 @@ function checkLevel1() {
     duration_seconds: duration,
   })
   applyBoost(1)
+  clearProgress(1)
 }
 
 // ===== Level 2 =====
@@ -1124,6 +1152,7 @@ function checkLevel2Part() {
       modalSuccess.value = true
       showModal.value = true
       l2Part.value++
+      saveProgress(2)
     } else {
       modalSuccess.value = true
       showModal.value = true
@@ -1134,6 +1163,7 @@ function checkLevel2Part() {
         duration_seconds: duration,
       })
       applyBoost(2)
+      clearProgress(2)
     }
   } else {
     modalSuccess.value = false
@@ -1260,6 +1290,7 @@ function checkLevel3Task() {
       modalSuccess.value = true
       showModal.value = true
       l3Task.value++
+      saveProgress(3)
       l3Answer.value = ''
       l3Feedback.value = ''
     } else {
@@ -1272,6 +1303,7 @@ function checkLevel3Task() {
         duration_seconds: duration,
       })
       applyBoost(3)
+      clearProgress(3)
     }
   } else {
     modalSuccess.value = false
@@ -1379,6 +1411,7 @@ function checkLevel4Task() {
       modalSuccess.value = true
       showModal.value = true
       l4Task.value++
+      saveProgress(4)
     } else {
       modalSuccess.value = true
       showModal.value = true
@@ -1386,6 +1419,7 @@ function checkLevel4Task() {
       const duration = levelStartTime.value[4] ? Math.floor((Date.now() - levelStartTime.value[4]) / 1000) : 0
       store.recordEvent('challenge_pass', 4, undefined, { attempts: levelAttempts.value[4], duration_seconds: duration })
       applyBoost(4)
+      clearProgress(4)
     }
   } else {
     modalSuccess.value = false
@@ -1475,6 +1509,7 @@ function checkLevel5Task() {
       modalSuccess.value = true
       showModal.value = true
       l5Task.value++
+      saveProgress(5)
     } else {
       modalSuccess.value = true
       showModal.value = true
@@ -1482,6 +1517,7 @@ function checkLevel5Task() {
       const duration = levelStartTime.value[5] ? Math.floor((Date.now() - levelStartTime.value[5]) / 1000) : 0
       store.recordEvent('challenge_pass', 5, undefined, { attempts: levelAttempts.value[5], duration_seconds: duration })
       applyBoost(5)
+      clearProgress(5)
     }
   } else {
     modalSuccess.value = false
@@ -1560,6 +1596,7 @@ function checkLevel6Task() {
       modalSuccess.value = true
       showModal.value = true
       l6Task.value++
+      saveProgress(6)
       l6Answer.value = ''
       l6Feedback.value = ''
     } else {
@@ -1569,6 +1606,7 @@ function checkLevel6Task() {
       const duration = levelStartTime.value[6] ? Math.floor((Date.now() - levelStartTime.value[6]) / 1000) : 0
       store.recordEvent('challenge_pass', 6, undefined, { attempts: levelAttempts.value[6], duration_seconds: duration })
       applyBoost(6)
+      clearProgress(6)
     }
   } else {
     modalSuccess.value = false
@@ -1669,6 +1707,7 @@ function checkLevel7Part() {
       modalSuccess.value = true
       showModal.value = true
       l7Part.value++
+      saveProgress(7)
     } else {
       modalSuccess.value = true
       showModal.value = true
@@ -1676,6 +1715,7 @@ function checkLevel7Part() {
       const duration = levelStartTime.value[7] ? Math.floor((Date.now() - levelStartTime.value[7]) / 1000) : 0
       store.recordEvent('challenge_pass', 7, undefined, { attempts: levelAttempts.value[7], duration_seconds: duration })
       applyBoost(7)
+      clearProgress(7)
     }
   } else {
     modalSuccess.value = false
@@ -1762,6 +1802,7 @@ function checkLevel8Task() {
       modalSuccess.value = true
       showModal.value = true
       l8Task.value++
+      saveProgress(8)
     } else {
       modalSuccess.value = true
       showModal.value = true
@@ -1769,6 +1810,7 @@ function checkLevel8Task() {
       const duration = levelStartTime.value[8] ? Math.floor((Date.now() - levelStartTime.value[8]) / 1000) : 0
       store.recordEvent('challenge_pass', 8, undefined, { attempts: levelAttempts.value[8], duration_seconds: duration })
       applyBoost(8)
+      clearProgress(8)
     }
   } else {
     modalSuccess.value = false
@@ -1845,6 +1887,7 @@ function checkLevel9Task() {
       modalSuccess.value = true
       showModal.value = true
       l9Task.value++
+      saveProgress(9)
       l9Answer.value = ''
       l9Feedback.value = ''
     } else {
@@ -1854,6 +1897,7 @@ function checkLevel9Task() {
       const duration = levelStartTime.value[9] ? Math.floor((Date.now() - levelStartTime.value[9]) / 1000) : 0
       store.recordEvent('challenge_pass', 9, undefined, { attempts: levelAttempts.value[9], duration_seconds: duration })
       applyBoost(9)
+      clearProgress(9)
     }
   } else {
     modalSuccess.value = false
@@ -1868,6 +1912,41 @@ function applyBoost(level: number) {
   const intro = levelIntros[level]
   if (!intro) return
   abilities.value = abilities.value.map((v, i) => Math.min(100, v + (intro.boost[i] || 0)))
+}
+
+function goNextLevel() {
+  showModal.value = false
+  const next = currentLevel.value + 1
+  if (next <= 9) startLevel(next)
+}
+
+function saveProgress(level: number) {
+  try {
+    const key = `challenge_progress_${level}`
+    const data: Record<string, any> = {}
+    if (level === 2) data.part = l2Part.value
+    if (level === 3) data.task = l3Task.value
+    if (level === 4) data.task = l4Task.value
+    if (level === 5) data.task = l5Task.value
+    if (level === 6) data.task = l6Task.value
+    if (level === 7) data.part = l7Part.value
+    if (level === 8) data.task = l8Task.value
+    if (level === 9) data.task = l9Task.value
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch {}
+}
+
+function loadProgress(level: number) {
+  try {
+    const key = `challenge_progress_${level}`
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+
+function clearProgress(level: number) {
+  try { localStorage.removeItem(`challenge_progress_${level}`) } catch {}
 }
 
 initL2Blanks()
@@ -1941,6 +2020,7 @@ onMounted(async () => {
 .modal-box.fail { border: 2px solid #fca5a5; }
 .modal-icon { font-size: 48px; margin-bottom: 16px; }
 .modal-text { font-size: 17px; font-weight: 600; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
 .modal-box.success .modal-text { color: #166534; }
 .modal-box.fail .modal-text { color: #991b1b; }
 
