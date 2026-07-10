@@ -2,7 +2,7 @@
   <div class="tree-node" :style="{ paddingLeft: depth * 12 + 'px' }">
     <div
       class="node-row"
-      :class="{ selected: isSelected, recommended: isRecommended }"
+      :class="{ selected: isSelected, recommended: isRecommended, read: isRead }"
       @click="toggle"
     >
       <span class="expand-icon" v-if="node.children?.length" @click.stop="toggleExpand">
@@ -12,6 +12,7 @@
       </span>
       <span class="node-leaf-icon" v-else></span>
       <span class="node-title" :class="{ selected: isSelected, 'has-content': node.content }">{{ node.title }}</span>
+      <span v-if="isRead && !isQuizNode" class="read-check" title="已阅读">✓</span>
       <span v-if="isRecommended" class="star-badge" title="智能推荐">★</span>
     </div>
     <div v-if="isExpanded && node.children?.length" class="node-children">
@@ -23,6 +24,7 @@
         :selected-id="selectedId"
         :recommended-ids="recommendedIds"
         :expanded-ids="expandedIds"
+        :read-node-ids="readNodeIds"
         @select="$emit('select', $event)"
         @toggle-expand="$emit('toggle-expand', $event)"
       />
@@ -40,6 +42,7 @@ const props = defineProps<{
   selectedId?: string
   recommendedIds?: Set<string>
   expandedIds?: Set<string>
+  readNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +61,13 @@ const isRecommended = computed(() => {
   if (!props.recommendedIds) return false
   return props.recommendedIds.has(props.node.id)
 })
+
+const isRead = computed(() => {
+  if (!props.readNodeIds) return false
+  return props.readNodeIds.has(props.node.id)
+})
+
+const isQuizNode = computed(() => props.node.id.startsWith('quiz-'))
 
 function toggle() {
   if (props.node.children?.length) {
@@ -107,6 +117,14 @@ function toggleExpand() {
   font-weight: 500;
 }
 
+.node-row.read {
+  background: #f0fdf4;
+}
+
+.node-row.read .node-title {
+  color: #166534;
+}
+
 .expand-icon {
   display: flex;
   align-items: center;
@@ -134,6 +152,10 @@ function toggleExpand() {
   flex-shrink: 0;
 }
 
+.node-row.read .node-leaf-icon {
+  background: #22c55e;
+}
+
 .node-title {
   color: var(--text);
   line-height: 1.4;
@@ -150,6 +172,13 @@ function toggleExpand() {
 .node-title.selected {
   color: var(--primary);
   font-weight: 500;
+}
+
+.read-check {
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .star-badge {

@@ -201,6 +201,8 @@ export const learningApi = {
   getTimeline: (days?: number) =>
     api.get('/learning/timeline', { params: { days } }),
   getDashboard: () => api.get<LearningDashboard>('/learning/dashboard'),
+  markKnowledgeRead: (nodeId: string) => api.post(`/learning/knowledge-read/${nodeId}`),
+  getKnowledgeRead: () => api.get<{ read_node_ids: string[]; node_titles: Record<string, string> }>('/learning/knowledge-read'),
 }
 
 export const adminApi = {

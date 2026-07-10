@@ -44,6 +44,7 @@
               :selected-id="selectedNode?.id"
               :recommended-ids="recommendedIds"
               :expanded-ids="expandedIds"
+              :read-node-ids="readNodeIds"
               @select="selectNode"
               @toggle-expand="toggleExpand"
             />
@@ -53,11 +54,18 @@
           <div v-if="selectedNode" class="node-detail">
             <div class="detail-header">
               <h2 class="detail-title">{{ selectedNode.title }}</h2>
-              <div class="node-breadcrumb">
-                <span v-for="(crumb, idx) in breadcrumbs" :key="idx">
-                  <span class="crumb">{{ crumb }}</span>
-                  <span v-if="idx < breadcrumbs.length - 1" class="crumb-sep">/</span>
-                </span>
+              <div class="detail-meta">
+                <div class="node-breadcrumb">
+                  <span v-for="(crumb, idx) in breadcrumbs" :key="idx">
+                    <span class="crumb">{{ crumb }}</span>
+                    <span v-if="idx < breadcrumbs.length - 1" class="crumb-sep">/</span>
+                  </span>
+                </div>
+                <button v-if="!isQuizNode && selectedNode.content" class="btn btn-read"
+                  :class="{ 'is-read': isCurrentNodeRead }"
+                  @click="markAsRead">
+                  {{ isCurrentNodeRead ? '✓ 已阅读' : '阅读完毕' }}
+                </button>
               </div>
             </div>
             <div v-if="selectedNode.content" class="node-content markdown-body" v-html="renderMarkdown(selectedNode.content)"></div>
@@ -117,7 +125,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { knowledgeApi, type KnowledgeNode } from '../api'
+import { knowledgeApi, learningApi, type KnowledgeNode } from '../api'
 import { marked } from 'marked'
 import TreeNode from '../components/TreeNode.vue'
 
@@ -140,6 +148,7 @@ const searchResults = ref<any[]>([])
 const stats = ref({ total_documents: 0, chapters: 0 })
 const recommendedIds = ref<Set<string>>(new Set())
 const expandedIds = ref<Set<string>>(new Set())
+const readNodeIds = ref<Set<string>>(new Set())
 
 const quizAnswers = reactive<Record<number, string | string[]>>({})
 const quizChecked = reactive<Record<number, boolean>>({})
@@ -151,6 +160,26 @@ function toggleExpand(nodeId: string) {
   if (s.has(nodeId)) s.delete(nodeId)
   else s.add(nodeId)
   expandedIds.value = s
+}
+
+const isCurrentNodeRead = computed(() => {
+  if (!selectedNode.value || isQuizNode.value) return false
+  return readNodeIds.value.has(selectedNode.value.id)
+})
+
+async function markAsRead() {
+  if (!selectedNode.value || isCurrentNodeRead.value) return
+  readNodeIds.value = new Set([...readNodeIds.value, selectedNode.value.id])
+  try {
+    await learningApi.markKnowledgeRead(selectedNode.value.id)
+  } catch {}
+}
+
+async function loadReadNodes() {
+  try {
+    const { data } = await learningApi.getKnowledgeRead()
+    readNodeIds.value = new Set(data.read_node_ids)
+  } catch {}
 }
 
 const sectionQuizKey = computed(() => {
@@ -263,6 +292,7 @@ const breadcrumbs = computed(() => {
 onMounted(async () => {
   await loadTree()
   await loadStats()
+  await loadReadNodes()
   const nodeId = route.query.nodeId as string | undefined
   if (nodeId) {
     recommendedIds.value = new Set([nodeId])
@@ -537,6 +567,37 @@ function renderMarkdown(content: string): string {
   margin-bottom: 28px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-read {
+  padding: 4px 14px;
+  font-size: 13px;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-read:hover {
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.btn-read.is-read {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+  cursor: default;
 }
 
 .detail-title {

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.chat import ChatSession, ChatMessage
+from app.models.learning import LearningEvent
+from app.models.knowledge import KnowledgeNode
 from app.services.vector_store import vector_store
 from app.services.llm_service import llm_service
 from app.services.learning_tracker import learning_tracker, ABILITY_DIMS
@@ -44,6 +46,9 @@ PROFILE_SYSTEM_PROMPT_TEMPLATE = """【学员画像 — 请据此个性化回答
 
 闯关进度：
 {challenge_progress_text}
+
+已学章节：
+{read_chapters_text}
 
 学习风格：{learning_style}
 
@@ -312,11 +317,39 @@ class RAGService:
             if not progress_text:
                 progress_text = "  尚未开始闯关"
 
+            read_result = await db.execute(
+                select(LearningEvent.detail)
+                .where(LearningEvent.event_type == "knowledge_read")
+                .where(LearningEvent.user_id == user_id)
+                .order_by(LearningEvent.created_at.desc())
+            )
+            read_node_ids = []
+            seen = set()
+            for row in read_result.all():
+                nid = (row[0] or {}).get("node_id")
+                if nid and nid not in seen:
+                    seen.add(nid)
+                    read_node_ids.append(nid)
+            read_chapters_text = "  尚未阅读任何章节"
+            if read_node_ids:
+                title_result = await db.execute(
+                    select(KnowledgeNode.chapter, KnowledgeNode.section, KnowledgeNode.title)
+                    .where(KnowledgeNode.id.in_(read_node_ids))
+                )
+                titles = title_result.all()
+                if titles:
+                    read_chapters_text = ""
+                    for t in titles:
+                        ch = (t[0] or "").replace("-已同步", "")
+                        sec = t[1] or ""
+                        read_chapters_text += f"  - {ch} > {sec} > {t[2]}\n"
+
             return PROFILE_SYSTEM_PROMPT_TEMPLATE.format(
                 ability_scores_text=ability_scores_text,
                 weak_points_text=weak_points_text,
                 error_patterns_text=error_patterns_text,
                 challenge_progress_text=progress_text,
+                read_chapters_text=read_chapters_text,
                 learning_style=profile.learning_style or "undetermined",
             )
         except Exception as e:

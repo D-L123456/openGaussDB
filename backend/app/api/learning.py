@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.learning import LearningEvent, UserProfile, LearningRecommendation, ErrorPattern, AbilitySnapshot
+from app.models.knowledge import KnowledgeNode
 from app.services.learning_tracker import learning_tracker
 from app.services.profile_engine import profile_engine
 from app.schemas.learning import (
@@ -14,6 +15,7 @@ from app.schemas.learning import (
     AbilitySnapshotResponse,
     LearningDashboardResponse,
 )
+from sqlalchemy import select, func
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
 
@@ -225,3 +227,46 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
         ],
         timeline=timeline[:50],
     )
+
+
+@router.post("/knowledge-read/{node_id}")
+async def mark_knowledge_read(
+    node_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    await learning_tracker.record_event(
+        db=db,
+        user_id="default_user",
+        event_type="knowledge_read",
+        detail={"node_id": node_id},
+    )
+    return {"status": "ok"}
+
+
+@router.get("/knowledge-read")
+async def get_knowledge_read(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(LearningEvent.detail)
+        .where(LearningEvent.event_type == "knowledge_read")
+        .where(LearningEvent.user_id == "default_user")
+        .order_by(LearningEvent.created_at.desc())
+    )
+    seen = set()
+    read_nodes = []
+    for row in result.all():
+        detail = row[0] or {}
+        nid = detail.get("node_id")
+        if nid and nid not in seen:
+            seen.add(nid)
+            read_nodes.append(nid)
+    node_titles = {}
+    if read_nodes:
+        title_result = await db.execute(
+            select(KnowledgeNode.id, KnowledgeNode.title)
+            .where(KnowledgeNode.id.in_(read_nodes))
+        )
+        node_titles = {str(r[0]): r[1] for r in title_result.all()}
+    return {
+        "read_node_ids": read_nodes,
+        "node_titles": node_titles,
+    }
