@@ -11,8 +11,7 @@ class SqlQuestionCreate(BaseModel):
     hint: str | None = None
     reference_sql: str
     setup_sql: str | None = None
-    verify_sql: str | None = None
-    expected_result: str | None = None
+
     tags: dict | None = None
 
 

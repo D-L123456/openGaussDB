@@ -16,7 +16,7 @@
         </router-link>
         <router-link to="/knowledge-tree" class="nav-item" :class="{ active: $route.path === '/knowledge-tree' }">
           <span class="nav-icon">🌳</span>
-          <span>知识树</span>
+          <span>知识体系</span>
         </router-link>
         <router-link to="/challenge" class="nav-item" :class="{ active: $route.path === '/challenge' }">
           <span class="nav-icon">⚔️</span>

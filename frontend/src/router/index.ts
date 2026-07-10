@@ -24,6 +24,7 @@ const router = createRouter({
       component: () => import('../views/ChallengeView.vue'),
     },
     {
+
       path: '/profile',
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),

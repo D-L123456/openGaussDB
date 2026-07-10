@@ -342,6 +342,322 @@
           </div>
         </div>
       </div>
+
+      <div v-else-if="currentLevel === 4" class="level-4">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第四关</span><span class="level-label">视图与存储过程</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel4">重置</button>
+            <button class="btn btn-primary" @click="checkLevel4Task">{{ l4Task < 3 ? '提交本题' : '验证全部' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>将右侧代码片段拖拽到左侧空位中，拼装完整的SQL语句。<span style="margin-left:12px">进度：第{{ l4Task }}题 / 共3题</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l4Task - 1) / 3 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l4Task > 1, current: l4Task === 1 }">1. 创建视图</span>
+            <span :class="{ done: l4Task > 2, current: l4Task === 2 }">2. 存储过程</span>
+            <span :class="{ current: l4Task === 3 }">3. 调用过程</span>
+          </div>
+        </div>
+        <div class="l4-workspace">
+          <div class="l4-code-panel">
+            <div class="l4-panel-header">拼装区</div>
+            <div class="l4-code-body">
+              <div v-for="(slot, si) in l4CurrentSlots" :key="si" class="l4-slot-row"
+                :class="{ correct: slot.checked && slot.correct, wrong: slot.checked && !slot.correct }"
+                @dragover.prevent @drop="onDropL4($event, si)">
+                <template v-if="slot.filled">
+                  <code class="l4-filled-code">{{ slot.value }}</code>
+                  <button class="l4-remove-btn" @click="removeL4Slot(si)">✕</button>
+                </template>
+                <template v-else>
+                  <span class="l4-empty-slot">拖拽代码片段到此处</span>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="l4-pieces-panel">
+            <div class="l4-panel-header">代码片段</div>
+            <div class="l4-pieces-body">
+              <div v-for="(piece, pi) in l4CurrentPieces" :key="pi" class="l4-piece"
+                :class="{ used: piece.used }" :draggable="!piece.used"
+                @dragstart="onDragStartL4($event, pi)">
+                <code>{{ piece.text }}</code>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l4Task > 3 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l4Task > 3 ? '恭喜通关！视图与存储过程拼装完成！' : '回答正确！进入下一题') : '代码片段顺序不正确，请重试' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentLevel === 5" class="level-5">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第五关</span><span class="level-label">触发器与事务</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel5">重置</button>
+            <button class="btn btn-primary" @click="checkLevel5Task">{{ l5Task < 2 ? '提交本题' : '验证全部' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>将左侧步骤拖拽到右侧正确顺序中，组成完整的触发器/事务流程。<span style="margin-left:12px">进度：第{{ l5Task }}题 / 共2题</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l5Task - 1) / 2 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l5Task > 1, current: l5Task === 1 }">1. 触发器流程</span>
+            <span :class="{ current: l5Task === 2 }">2. 事务流程</span>
+          </div>
+        </div>
+        <div class="l4-workspace">
+          <div class="l4-pieces-panel">
+            <div class="l4-panel-header">可用步骤</div>
+            <div class="l4-pieces-body">
+              <div v-for="(step, si) in l5CurrentAvailable" :key="si" class="l4-piece"
+                :class="{ used: step.used }" :draggable="!step.used"
+                @dragstart="onDragStartL5($event, si)">
+                <code>{{ step.text }}</code>
+              </div>
+            </div>
+          </div>
+          <div class="l4-code-panel">
+            <div class="l4-panel-header">正确顺序</div>
+            <div class="l4-code-body">
+              <div v-for="(slot, si) in l5CurrentSlots" :key="si" class="l4-slot-row"
+                :class="{ correct: slot.checked && slot.correct, wrong: slot.checked && !slot.correct }"
+                @dragover.prevent @drop="onDropL5($event, si)">
+                <span class="l5-step-num">{{ si + 1 }}.</span>
+                <template v-if="slot.filled">
+                  <code class="l4-filled-code">{{ slot.value }}</code>
+                  <button class="l4-remove-btn" @click="removeL5Slot(si)">✕</button>
+                </template>
+                <template v-else>
+                  <span class="l4-empty-slot">拖拽步骤到此处</span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l5Task > 2 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l5Task > 2 ? '恭喜通关！触发器与事务流程掌握！' : '回答正确！进入下一题') : '步骤顺序不正确，请重试' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentLevel === 6" class="level-6">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第六关</span><span class="level-label">性能调优</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel6">重置</button>
+            <button class="btn btn-primary" @click="checkLevel6Task">{{ l6Task < 3 ? '提交本题' : '验证全部' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>阅读慢查询场景，在右侧编写优化后的SQL语句。<span style="margin-left:12px">进度：第{{ l6Task }}题 / 共3题</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l6Task - 1) / 3 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l6Task > 1, current: l6Task === 1 }">1. 索引优化</span>
+            <span :class="{ done: l6Task > 2, current: l6Task === 2 }">2. 查询改写</span>
+            <span :class="{ current: l6Task === 3 }">3. 执行计划</span>
+          </div>
+        </div>
+        <div class="l3-workspace">
+          <div class="l3-ref-panel">
+            <div class="l3-panel-header">慢查询场景</div>
+            <div class="l3-ref-body">
+              <div v-for="(line, i) in l6CurrentRef" :key="i" class="l3-ref-line">{{ line }}</div>
+              <div class="l3-divider"></div>
+              <div class="l3-task-text">{{ l6CurrentDesc }}</div>
+            </div>
+          </div>
+          <div class="l3-editor-panel">
+            <div class="l3-panel-header">优化SQL</div>
+            <textarea class="l3-editor" v-model="l6Answer" placeholder="在此输入优化后的SQL语句..." spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l6Task > 3 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l6Task > 3 ? '恭喜通关！性能调优技能掌握！' : '回答正确！进入下一题') : l6Feedback || 'SQL优化不正确，请检查' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentLevel === 7" class="level-7">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第七关</span><span class="level-label">数据库安全与权限</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel7">重置</button>
+            <button class="btn btn-primary" @click="checkLevel7Part">{{ l7Part < 3 ? '提交本部分' : '验证答案' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>补全SQL命令中的空缺，完成用户角色创建、权限授予与回收。<span style="margin-left:12px">进度：第{{ l7Part }}部分 / 共3部分</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l7Part - 1) / 3 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l7Part > 1, current: l7Part === 1 }">1. 创建角色</span>
+            <span :class="{ done: l7Part > 2, current: l7Part === 2 }">2. 授予权限</span>
+            <span :class="{ current: l7Part === 3 }">3. 回收权限</span>
+          </div>
+        </div>
+        <div class="sql-workspace">
+          <div class="sql-terminal">
+            <div class="terminal-header"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span><span class="terminal-title">openGauss Terminal</span></div>
+            <div class="terminal-body">
+              <div v-for="(line, li) in l7CurrentLines" :key="li" class="sql-line">
+                <template v-for="(seg, si) in line" :key="si">
+                  <span v-if="seg.type === 'text'" class="sql-text">{{ seg.value }}</span>
+                  <template v-else>
+                    <span v-if="l7BlankMeta[seg.blankId]?.mode === 'select'" class="sql-blank"
+                      :class="{ filled: l7Blanks[seg.blankId]?.filled, correct: l7Blanks[seg.blankId]?.checked && l7Blanks[seg.blankId]?.correct, wrong: l7Blanks[seg.blankId]?.checked && !l7Blanks[seg.blankId]?.correct }"
+                      @click="l7ActiveBlank = seg.blankId">
+                      {{ l7Blanks[seg.blankId]?.filled ? l7Blanks[seg.blankId]?.value : '____' }}
+                    </span>
+                    <input v-else class="sql-input"
+                      :class="{ correct: l7Blanks[seg.blankId]?.checked && l7Blanks[seg.blankId]?.correct, wrong: l7Blanks[seg.blankId]?.checked && !l7Blanks[seg.blankId]?.correct }"
+                      :value="l7Blanks[seg.blankId]?.value || ''"
+                      @input="onL7Input(seg.blankId, ($event.target as HTMLInputElement).value)"
+                      @focus="l7ActiveBlank = seg.blankId"
+                      placeholder="输入答案" />
+                  </template>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="sql-options">
+            <div class="options-header">答题面板</div>
+            <template v-if="l7ActiveBlank !== null && l7BlankMeta[l7ActiveBlank]?.mode === 'select'">
+              <div class="options-target">第{{ l7ActiveBlank + 1 }}空 — 选择题</div>
+              <div class="options-list">
+                <button v-for="opt in l7CurrentOptions" :key="opt" class="option-btn"
+                  :class="{ selected: l7Blanks[l7ActiveBlank]?.value === opt }"
+                  @click="selectL7Option(opt)">{{ opt }}</button>
+              </div>
+            </template>
+            <template v-else-if="l7ActiveBlank !== null && l7BlankMeta[l7ActiveBlank]?.mode === 'input'">
+              <div class="options-target">第{{ l7ActiveBlank + 1 }}空 — 填空题</div>
+              <div class="options-hint">请在代码中直接输入答案</div>
+              <div class="options-hint" style="margin-top:8px;color:#64748b;">提示：{{ l7BlankMeta[l7ActiveBlank]?.hint }}</div>
+            </template>
+            <div v-else class="options-hint">点击选择题空缺处显示选项</div>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l7Part > 3 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l7Part > 3 ? '恭喜通关！数据库安全与权限掌握！' : '本部分通过！进入下一部分') : '部分空缺填写不正确，请检查红色标记处' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentLevel === 8" class="level-8">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第八关</span><span class="level-label">备份与恢复</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel8">重置</button>
+            <button class="btn btn-primary" @click="checkLevel8Task">{{ l8Task < 2 ? '提交本题' : '验证全部' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>将步骤拖拽排列为正确的备份/恢复命令执行顺序。<span style="margin-left:12px">进度：第{{ l8Task }}题 / 共2题</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l8Task - 1) / 2 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l8Task > 1, current: l8Task === 1 }">1. 备份命令</span>
+            <span :class="{ current: l8Task === 2 }">2. 恢复命令</span>
+          </div>
+        </div>
+        <div class="l4-workspace">
+          <div class="l4-pieces-panel">
+            <div class="l4-panel-header">可用步骤</div>
+            <div class="l4-pieces-body">
+              <div v-for="(step, si) in l8CurrentAvailable" :key="si" class="l4-piece"
+                :class="{ used: step.used }" :draggable="!step.used"
+                @dragstart="onDragStartL8($event, si)">
+                <code>{{ step.text }}</code>
+              </div>
+            </div>
+          </div>
+          <div class="l4-code-panel">
+            <div class="l4-panel-header">正确顺序</div>
+            <div class="l4-code-body">
+              <div v-for="(slot, si) in l8CurrentSlots" :key="si" class="l4-slot-row"
+                :class="{ correct: slot.checked && slot.correct, wrong: slot.checked && !slot.correct }"
+                @dragover.prevent @drop="onDropL8($event, si)">
+                <span class="l5-step-num">{{ si + 1 }}.</span>
+                <template v-if="slot.filled">
+                  <code class="l4-filled-code">{{ slot.value }}</code>
+                  <button class="l4-remove-btn" @click="removeL8Slot(si)">✕</button>
+                </template>
+                <template v-else>
+                  <span class="l4-empty-slot">拖拽步骤到此处</span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l8Task > 2 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l8Task > 2 ? '恭喜通关！备份与恢复流程掌握！' : '回答正确！进入下一题') : '步骤顺序不正确，请重试' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentLevel === 9" class="level-9">
+        <div class="level-header">
+          <button class="btn" @click="currentLevel = 0">← 返回</button>
+          <div class="level-info"><span class="level-badge">第九关</span><span class="level-label">综合实战：Bug猎人</span></div>
+          <div class="level-actions">
+            <button class="btn" @click="resetLevel9">重置</button>
+            <button class="btn btn-primary" @click="checkLevel9Task">{{ l9Task < 3 ? '提交本题' : '验证全部' }}</button>
+          </div>
+        </div>
+        <div class="level-hint"><strong>任务说明：</strong>找出SQL代码中的Bug并修正，在右侧写出正确的SQL。<span style="margin-left:12px">进度：第{{ l9Task }}题 / 共3题</span></div>
+        <div class="l2-progress">
+          <div class="l2-progress-bar"><div class="l2-progress-fill" :style="{ width: ((l9Task - 1) / 3 * 100) + '%' }"></div></div>
+          <div class="l2-progress-steps">
+            <span :class="{ done: l9Task > 1, current: l9Task === 1 }">1. 语法Bug</span>
+            <span :class="{ done: l9Task > 2, current: l9Task === 2 }">2. 逻辑Bug</span>
+            <span :class="{ current: l9Task === 3 }">3. 性能Bug</span>
+          </div>
+        </div>
+        <div class="l3-workspace">
+          <div class="l3-ref-panel">
+            <div class="l3-panel-header">有Bug的SQL</div>
+            <div class="l3-ref-body">
+              <div v-for="(line, i) in l9CurrentRef" :key="i" class="l3-ref-line" style="color:#f38ba8;">{{ line }}</div>
+              <div class="l3-divider"></div>
+              <div class="l3-task-text">{{ l9CurrentDesc }}</div>
+            </div>
+          </div>
+          <div class="l3-editor-panel">
+            <div class="l3-panel-header">修正后的SQL</div>
+            <textarea class="l3-editor" v-model="l9Answer" placeholder="在此输入修正后的SQL语句..." spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal=false">
+          <div class="modal-box" :class="{ success: modalSuccess, fail: !modalSuccess }">
+            <div class="modal-icon">{{ modalSuccess ? (l9Task > 3 ? '🎉' : '✅') : '❌' }}</div>
+            <div class="modal-text">{{ modalSuccess ? (l9Task > 3 ? '恭喜通关！Bug猎人称号达成！' : '回答正确！进入下一题') : l9Feedback || '修正不正确，请再仔细检查' }}</div>
+            <button class="btn" :class="{ 'btn-primary': modalSuccess }" @click="showModal=false">确定</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -359,7 +675,7 @@ const modalSuccess = ref(false)
 const showIntroModal = ref(false)
 const introLevel = ref(0)
 
-const levelAttempts = ref<Record<number, number>>({ 1: 0, 2: 0, 3: 0 })
+const levelAttempts = ref<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 })
 const levelStartTime = ref<Record<number, number>>({})
 
 const abilityDims = ['基础环境搭建', 'openGauss运维', '数据库迁移与同步', '数据库开发', '数据库设计', '数据库优化与调优', 'SQL编程与优化', '数据库对象管理']
@@ -385,6 +701,42 @@ const levelIntros: Record<number, { title: string; desc: string; skills: string[
     desc: '根据银行业务场景，仿写INSERT和UPDATE语句完成数据录入、修改密码和挂失操作。通过本关，你将掌握DML语句的编写，理解数据插入与更新的实际应用。',
     skills: ['SQL DML语法', 'INSERT语句', 'UPDATE语句', '数据维护'],
     boost: [0, 0, 0, 20, 5, 0, 30, 10],
+  },
+  4: {
+    title: '第四关 — 视图与存储过程',
+    desc: '拖拽代码片段拼装视图创建和存储过程定义。通过本关，你将掌握CREATE VIEW和CREATE PROCEDURE的语法结构，理解数据库对象的封装与复用。',
+    skills: ['视图创建', '存储过程', 'SQL DDL语法', '数据库对象管理'],
+    boost: [0, 0, 0, 20, 5, 0, 15, 25],
+  },
+  5: {
+    title: '第五关 — 触发器与事务',
+    desc: '连接触发器流程节点，理解事务执行流程。通过本关，你将掌握触发器的创建与执行逻辑，理解事务ACID特性和COMMIT/ROLLBACK机制。',
+    skills: ['触发器', '事务管理', 'ACID特性', '数据库开发'],
+    boost: [0, 0, 0, 25, 0, 0, 10, 15],
+  },
+  6: {
+    title: '第六关 — 性能调优',
+    desc: '阅读慢查询场景，手动编写优化SQL语句提升性能。通过本关，你将掌握索引优化、查询改写、执行计划分析等核心调优技能。',
+    skills: ['SQL优化', '索引设计', '执行计划', '性能调优'],
+    boost: [0, 0, 0, 10, 0, 30, 25, 5],
+  },
+  7: {
+    title: '第七关 — 数据库安全与权限',
+    desc: '补全用户角色创建、权限授予与回收的SQL命令。通过本关，你将掌握openGauss的权限管理体系，理解角色、授权与安全策略。',
+    skills: ['用户管理', '权限控制', '角色授权', '数据库安全'],
+    boost: [0, 20, 0, 10, 0, 0, 10, 20],
+  },
+  8: {
+    title: '第八关 — 备份与恢复',
+    desc: '拖拽排列gs_dump和gs_restore命令的正确执行步骤。通过本关，你将掌握openGauss数据库的备份恢复流程和运维操作。',
+    skills: ['备份恢复', 'gs_dump', 'gs_restore', '数据库运维'],
+    boost: [0, 25, 0, 5, 0, 0, 0, 15],
+  },
+  9: {
+    title: '第九关 — 综合实战：Bug猎人',
+    desc: '找出SQL代码中的Bug并修正，考验综合能力。通过本关，你将综合运用所学知识，培养SQL代码审查和调试能力。',
+    skills: ['SQL调试', '代码审查', '综合应用', '问题定位'],
+    boost: [0, 10, 0, 15, 10, 10, 20, 10],
   },
 }
 
@@ -518,6 +870,12 @@ function startLevel(level: number) {
   if (level === 1) resetLevel1()
   if (level === 2) resetLevel2()
   if (level === 3) resetLevel3()
+  if (level === 4) resetLevel4()
+  if (level === 5) resetLevel5()
+  if (level === 6) resetLevel6()
+  if (level === 7) resetLevel7()
+  if (level === 8) resetLevel8()
+  if (level === 9) resetLevel9()
 }
 
 function resetLevel1() {
@@ -792,7 +1150,8 @@ function checkLevel2Part() {
 
 function resetLevel2() {
   showModal.value = false
-  initL2Blanks()
+initL2Blanks()
+initL7Blanks()
 }
 
 // ===== Level 3 =====
@@ -925,6 +1284,583 @@ function checkLevel3Task() {
       ability_dim: 'SQL编程与优化',
       task_index: l3Task.value,
     })
+  }
+}
+
+// ===== Level 4: 视图与存储过程（代码拼图） =====
+const l4Task = ref(1)
+const l4Version = ref(0)
+
+interface L4Slot { filled: boolean; value: string; checked: boolean; correct: boolean }
+
+const l4TasksData: Record<number, { pieces: string[]; answer: string[] }> = {
+  1: {
+    pieces: ['CREATE VIEW', 'AS SELECT', 'FROM cardInfo', 'WHERE isreportloss =', "CREATE VIEW v_active_cards", "'否'"],
+    answer: ["CREATE VIEW v_active_cards", 'AS SELECT', '*', 'FROM cardInfo', 'WHERE isreportloss =', "'否'"],
+  },
+  2: {
+    pieces: ['CREATE OR REPLACE PROCEDURE', 'BEGIN', 'UPDATE cardInfo SET', 'WHERE cardid =', 'END;', 'pass = v_pass', 'add_user_pass(v_cardid VARCHAR, v_pass VARCHAR)'],
+    answer: ['CREATE OR REPLACE PROCEDURE', 'add_user_pass(v_cardid VARCHAR, v_pass VARCHAR)', 'AS', 'BEGIN', 'UPDATE cardInfo SET', 'pass = v_pass', 'WHERE cardid =', 'v_cardid;', 'END;'],
+  },
+  3: {
+    pieces: ['CALL', "add_user_pass('1010357600000001',", "'654321');"],
+    answer: ['CALL', "add_user_pass('1010357600000001',", "'654321');"],
+  },
+}
+
+const l4CurrentPieces = computed(() => {
+  l4Version.value
+  const data = l4TasksData[l4Task.value]
+  if (!data) return []
+  return data.pieces.map((text) => {
+    const slots = l4Slots.value[l4Task.value] || []
+    const used = slots.some(s => s.value === text && s.filled)
+    return { text, used }
+  })
+})
+
+const l4CurrentSlots = computed(() => {
+  l4Version.value
+  return l4Slots.value[l4Task.value] || []
+})
+
+const l4Slots = ref<Record<number, L4Slot[]>>({})
+
+function resetLevel4() {
+  showModal.value = false
+  l4Task.value = 1
+  l4Slots.value = {}
+  for (const t of [1, 2, 3]) {
+    const data = l4TasksData[t]
+    l4Slots.value[t] = data.answer.map(() => ({ filled: false, value: '', checked: false, correct: false }))
+  }
+  l4Version.value++
+}
+
+let l4DragIdx: number | null = null
+
+function onDragStartL4(_e: DragEvent, idx: number) { l4DragIdx = idx }
+
+function onDropL4(_e: DragEvent, slotIdx: number) {
+  if (l4DragIdx === null) return
+  const data = l4TasksData[l4Task.value]
+  if (!data) return
+  const pieceText = data.pieces[l4DragIdx]
+  const slots = [...(l4Slots.value[l4Task.value] || [])]
+  if (slots[slotIdx].filled) return
+  slots[slotIdx] = { filled: true, value: pieceText, checked: false, correct: false }
+  l4Slots.value[l4Task.value] = slots
+  l4Version.value++
+  l4DragIdx = null
+}
+
+function removeL4Slot(slotIdx: number) {
+  const slots = [...(l4Slots.value[l4Task.value] || [])]
+  slots[slotIdx] = { filled: false, value: '', checked: false, correct: false }
+  l4Slots.value[l4Task.value] = slots
+  l4Version.value++
+}
+
+function checkLevel4Task() {
+  const data = l4TasksData[l4Task.value]
+  if (!data) return
+  const slots = l4Slots.value[l4Task.value] || []
+  let allCorrect = true
+  const newSlots = slots.map((s, i) => {
+    const correct = s.filled && s.value === data.answer[i]
+    if (!correct) allCorrect = false
+    return { ...s, checked: true, correct }
+  })
+  l4Slots.value[l4Task.value] = newSlots
+  l4Version.value++
+
+  if (allCorrect) {
+    if (l4Task.value < 3) {
+      modalSuccess.value = true
+      showModal.value = true
+      l4Task.value++
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[4] = (levelAttempts.value[4] || 0) + 1
+      const duration = levelStartTime.value[4] ? Math.floor((Date.now() - levelStartTime.value[4]) / 1000) : 0
+      store.recordEvent('challenge_pass', 4, undefined, { attempts: levelAttempts.value[4], duration_seconds: duration })
+      applyBoost(4)
+    }
+  } else {
+    modalSuccess.value = false
+    showModal.value = true
+    levelAttempts.value[4] = (levelAttempts.value[4] || 0) + 1
+    store.recordEvent('challenge_error', 4, l4Task.value, { category: '代码拼图错误', description: `第${l4Task.value}题拼装不正确`, ability_dim: '数据库对象管理' })
+  }
+}
+
+// ===== Level 5: 触发器与事务（流程排序） =====
+const l5Task = ref(1)
+
+
+interface L5Slot { filled: boolean; value: string; checked: boolean; correct: boolean }
+
+const l5TasksData: Record<number, { steps: string[]; answer: string[] }> = {
+  1: {
+    steps: ['CREATE TRIGGER trg_check_balance', 'BEFORE UPDATE ON cardInfo', 'FOR EACH ROW', 'BEGIN', 'IF NEW.balance < 0 THEN', 'RAISE EXCEPTION', 'END IF;', 'END;'],
+    answer: ['CREATE TRIGGER trg_check_balance', 'BEFORE UPDATE ON cardInfo', 'FOR EACH ROW', 'BEGIN', 'IF NEW.balance < 0 THEN', 'RAISE EXCEPTION', 'END IF;', 'END;'],
+  },
+  2: {
+    steps: ['BEGIN;', 'UPDATE cardInfo SET balance = balance - 1000', 'WHERE cardid =', 'UPDATE cardInfo SET balance = balance + 1000', 'COMMIT;', 'ROLLBACK;', "'1010357600000001';", "'1010357600000002';"],
+    answer: ['BEGIN;', 'UPDATE cardInfo SET balance = balance - 1000', 'WHERE cardid =', "'1010357600000001';", 'UPDATE cardInfo SET balance = balance + 1000', 'WHERE cardid =', "'1010357600000002';", 'COMMIT;'],
+  },
+}
+
+const l5CurrentAvailable = computed(() => {
+  const data = l5TasksData[l5Task.value]
+  if (!data) return []
+  const slots = l5Slots5.value[l5Task.value] || []
+  return data.steps.map((text, i) => {
+    const used = slots.some(s => s.filled && s.value === text && s._srcIdx === i)
+    return { text, used }
+  })
+})
+
+const l5CurrentSlots = computed(() => l5Slots5.value[l5Task.value] || [])
+
+const l5Slots5 = ref<Record<number, (L5Slot & { _srcIdx: number })[]>>({})
+
+function resetLevel5() {
+  showModal.value = false
+  l5Task.value = 1
+  l5Slots5.value = {}
+  for (const t of [1, 2]) {
+    const data = l5TasksData[t]
+    l5Slots5.value[t] = data.answer.map(() => ({ filled: false, value: '', checked: false, correct: false, _srcIdx: -1 }))
+  }
+}
+
+let l5DragIdx: number | null = null
+
+function onDragStartL5(_e: DragEvent, idx: number) { l5DragIdx = idx }
+
+function onDropL5(_e: DragEvent, slotIdx: number) {
+  if (l5DragIdx === null) return
+  const data = l5TasksData[l5Task.value]
+  if (!data) return
+  const stepText = data.steps[l5DragIdx]
+  const slots = [...(l5Slots5.value[l5Task.value] || [])]
+  if (slots[slotIdx].filled) return
+  slots[slotIdx] = { filled: true, value: stepText, checked: false, correct: false, _srcIdx: l5DragIdx }
+  l5Slots5.value[l5Task.value] = slots
+  l5DragIdx = null
+}
+
+function removeL5Slot(slotIdx: number) {
+  const slots = [...(l5Slots5.value[l5Task.value] || [])]
+  slots[slotIdx] = { filled: false, value: '', checked: false, correct: false, _srcIdx: -1 }
+  l5Slots5.value[l5Task.value] = slots
+}
+
+function checkLevel5Task() {
+  const data = l5TasksData[l5Task.value]
+  if (!data) return
+  const slots = l5Slots5.value[l5Task.value] || []
+  let allCorrect = true
+  const newSlots = slots.map((s, i) => {
+    const correct = s.filled && s.value === data.answer[i]
+    if (!correct) allCorrect = false
+    return { ...s, checked: true, correct }
+  })
+  l5Slots5.value[l5Task.value] = newSlots
+
+  if (allCorrect) {
+    if (l5Task.value < 2) {
+      modalSuccess.value = true
+      showModal.value = true
+      l5Task.value++
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[5] = (levelAttempts.value[5] || 0) + 1
+      const duration = levelStartTime.value[5] ? Math.floor((Date.now() - levelStartTime.value[5]) / 1000) : 0
+      store.recordEvent('challenge_pass', 5, undefined, { attempts: levelAttempts.value[5], duration_seconds: duration })
+      applyBoost(5)
+    }
+  } else {
+    modalSuccess.value = false
+    showModal.value = true
+    levelAttempts.value[5] = (levelAttempts.value[5] || 0) + 1
+    store.recordEvent('challenge_error', 5, l5Task.value, { category: '流程排序错误', description: `第${l5Task.value}题排序不正确`, ability_dim: '数据库开发' })
+  }
+}
+
+// ===== Level 6: 性能调优（仿写SQL） =====
+const l6Task = ref(1)
+const l6Answer = ref('')
+const l6Feedback = ref('')
+
+interface L6TaskDef { ref: string[]; desc: string; validate: (sql: string) => { correct: boolean; feedback?: string } }
+
+const l6Tasks: Record<number, L6TaskDef> = {
+  1: {
+    ref: ['-- 慢查询：全表扫描查找银行卡', 'SELECT * FROM cardInfo', "WHERE pass = '888888';", '', '-- 问题：pass列没有索引，每次查询扫描全表', '-- 优化方向：为pass列创建索引'],
+    desc: '请写出为cardInfo表的pass列创建索引的SQL语句',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasCreate = s.includes('CREATE INDEX') || s.includes('CREATE UNIQUE INDEX')
+      const hasOn = s.includes('ON') && s.includes('CARDINFO') && s.includes('PASS')
+      if (!hasCreate) return { correct: false, feedback: '请使用CREATE INDEX语句' }
+      if (!hasOn) return { correct: false, feedback: '索引应建立在cardInfo表的pass列上' }
+      return { correct: true }
+    },
+  },
+  2: {
+    ref: ['-- 慢查询：使用SELECT * 查询所有列', 'SELECT * FROM userInfo;', '', '-- 问题：只需要客户姓名和电话，却返回了所有列', '-- 优化方向：只查询需要的列'],
+    desc: '请写出只查询userInfo表中customerName和telephone列的SQL语句',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasSelect = s.includes('SELECT') && s.includes('CUSTOMERNAME') && s.includes('TELEPHONE')
+      const hasFrom = s.includes('FROM') && s.includes('USERINFO')
+      const noStar = !s.includes('SELECT *')
+      if (!hasSelect) return { correct: false, feedback: '请只查询customerName和telephone列' }
+      if (!hasFrom) return { correct: false, feedback: '请从userInfo表查询' }
+      if (!noStar) return { correct: false, feedback: '不要使用SELECT *，只查询需要的列' }
+      return { correct: true }
+    },
+  },
+  3: {
+    ref: ['-- 慢查询：使用OR条件导致索引失效', "SELECT * FROM tradeInfo", "WHERE tradeType = '存入' OR tradeMoney > 10000;", '', '-- 问题：OR条件可能导致索引失效', '-- 优化方向：使用UNION ALL替代OR'],
+    desc: '请使用UNION ALL改写上述查询，将OR条件拆分为两个查询合并',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasUnion = s.includes('UNION ALL')
+      const hasFirst = s.includes('TRADETYPE') && s.includes('存入')
+      const hasSecond = s.includes('TRADEMONEY') && s.includes('10000')
+      if (!hasUnion) return { correct: false, feedback: '请使用UNION ALL合并两个查询' }
+      if (!hasFirst) return { correct: false, feedback: '第一个查询应筛选tradeType=存入' }
+      if (!hasSecond) return { correct: false, feedback: '第二个查询应筛选tradeMoney>10000' }
+      return { correct: true }
+    },
+  },
+}
+
+const l6CurrentRef = computed(() => l6Tasks[l6Task.value]?.ref || [])
+const l6CurrentDesc = computed(() => l6Tasks[l6Task.value]?.desc || '')
+
+function resetLevel6() {
+  showModal.value = false
+  l6Task.value = 1
+  l6Answer.value = ''
+  l6Feedback.value = ''
+}
+
+function checkLevel6Task() {
+  const task = l6Tasks[l6Task.value]
+  if (!task) return
+  const result = task.validate(l6Answer.value)
+  if (result.correct) {
+    if (l6Task.value < 3) {
+      modalSuccess.value = true
+      showModal.value = true
+      l6Task.value++
+      l6Answer.value = ''
+      l6Feedback.value = ''
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[6] = (levelAttempts.value[6] || 0) + 1
+      const duration = levelStartTime.value[6] ? Math.floor((Date.now() - levelStartTime.value[6]) / 1000) : 0
+      store.recordEvent('challenge_pass', 6, undefined, { attempts: levelAttempts.value[6], duration_seconds: duration })
+      applyBoost(6)
+    }
+  } else {
+    modalSuccess.value = false
+    l6Feedback.value = result.feedback || ''
+    showModal.value = true
+    levelAttempts.value[6] = (levelAttempts.value[6] || 0) + 1
+    store.recordEvent('challenge_error', 6, l6Task.value, { category: 'SQL优化错误', description: `第${l6Task.value}题优化不正确`, ability_dim: '数据库优化与调优' })
+  }
+}
+
+// ===== Level 7: 数据库安全与权限（填空） =====
+const l7Part = ref(1)
+const l7ActiveBlank = ref<number | null>(null)
+const l7Blanks = ref<Record<number, { filled: boolean; value: string; checked: boolean; correct: boolean }>>({})
+
+interface L7BlankMeta { mode: 'select' | 'input'; answer: string; options?: string[]; hint?: string }
+
+const l7BlankMeta: Record<number, L7BlankMeta> = {
+  0: { mode: 'select', answer: 'ROLE', options: ['USER', 'ROLE', 'GROUP', 'PROFILE'] },
+  1: { mode: 'input', answer: 'IDENTIFIED', hint: '指定密码的关键字' },
+  2: { mode: 'select', answer: 'BY', options: ['WITH', 'BY', 'USING', 'FROM'] },
+  3: { mode: 'input', answer: 'GRANT', hint: '授予权限的SQL命令' },
+  4: { mode: 'select', answer: 'TO', options: ['TO', 'FOR', 'ON', 'AT'] },
+  5: { mode: 'input', answer: 'SELECT', hint: '查询权限对应什么操作' },
+  6: { mode: 'select', answer: 'ON', options: ['ON', 'IN', 'AT', 'FOR'] },
+  7: { mode: 'input', answer: 'REVOKE', hint: '回收权限的SQL命令' },
+  8: { mode: 'select', answer: 'FROM', options: ['FROM', 'TO', 'OFF', 'OUT'] },
+  9: { mode: 'input', answer: 'UPDATE', hint: '修改权限对应什么操作' },
+  10: { mode: 'select', answer: 'ON', options: ['ON', 'IN', 'OF', 'FOR'] },
+  11: { mode: 'input', answer: 'CASCADE', hint: '级联回收权限的关键字' },
+}
+
+const l7PartLines: Record<number, Seg[][]> = {
+  1: [
+    [{ type: 'text', value: '-- 步骤1: 创建角色' }],
+    [{ type: 'text', value: 'CREATE ' }, { type: 'blank', blankId: 0 }, { type: 'text', value: ' bank_teller' }],
+    [{ type: 'text', value: '  ' }, { type: 'blank', blankId: 1 }, { type: 'text', value: ' ' }, { type: 'blank', blankId: 2 }, { type: 'text', value: " 'BankTeller@123';" }],
+  ],
+  2: [
+    [{ type: 'text', value: '-- 步骤2: 授予角色权限' }],
+    [{ type: 'blank', blankId: 3 }, { type: 'text', value: ' ' }, { type: 'blank', blankId: 5 }, { type: 'text', value: ',' }, { type: 'blank', blankId: 9 }, { type: 'text', value: ' ' }, { type: 'blank', blankId: 6 }, { type: 'text', value: ' userInfo ' }, { type: 'blank', blankId: 4 }, { type: 'text', value: ' bank_teller;' }],
+  ],
+  3: [
+    [{ type: 'text', value: '-- 步骤3: 回收角色权限' }],
+    [{ type: 'blank', blankId: 7 }, { type: 'text', value: ' ' }, { type: 'blank', blankId: 9 }, { type: 'text', value: ' ' }, { type: 'blank', blankId: 10 }, { type: 'text', value: ' userInfo ' }, { type: 'blank', blankId: 8 }, { type: 'text', value: ' bank_teller ' }, { type: 'blank', blankId: 11 }, { type: 'text', value: ';' }],
+  ],
+}
+
+const l7CurrentLines = computed(() => l7PartLines[l7Part.value] || [])
+
+const l7CurrentOptions = computed(() => {
+  if (l7ActiveBlank.value === null) return []
+  const meta = l7BlankMeta[l7ActiveBlank.value]
+  if (!meta || meta.mode !== 'select') return []
+  return meta.options || []
+})
+
+function initL7Blanks() {
+  const b: Record<number, { filled: boolean; value: string; checked: boolean; correct: boolean }> = {}
+  for (const id of Object.keys(l7BlankMeta)) b[Number(id)] = { filled: false, value: '', checked: false, correct: false }
+  l7Blanks.value = b
+  l7ActiveBlank.value = null
+  l7Part.value = 1
+}
+
+function onL7Input(blankId: number, val: string) {
+  l7Blanks.value[blankId] = { filled: val.trim().length > 0, value: val.trim(), checked: false, correct: false }
+}
+
+function selectL7Option(opt: string) {
+  if (l7ActiveBlank.value === null) return
+  l7Blanks.value[l7ActiveBlank.value] = { filled: true, value: opt, checked: false, correct: false }
+}
+
+function resetLevel7() {
+  showModal.value = false
+  initL7Blanks()
+}
+
+function checkLevel7Part() {
+  const lines = l7PartLines[l7Part.value]
+  if (!lines) return
+  const ids: number[] = []
+  for (const line of lines) for (const seg of line) if (seg.type === 'blank') ids.push(seg.blankId)
+  let allCorrect = true
+  for (const id of ids) {
+    const b = l7Blanks.value[id]
+    const answer = l7BlankMeta[id].answer
+    if (!b || !b.filled || b.value.toUpperCase() !== answer.toUpperCase()) {
+      allCorrect = false
+      l7Blanks.value[id] = { filled: b?.filled || false, value: b?.value || '', checked: true, correct: false }
+    } else {
+      l7Blanks.value[id] = { ...b, checked: true, correct: true }
+    }
+  }
+  if (allCorrect) {
+    if (l7Part.value < 3) {
+      modalSuccess.value = true
+      showModal.value = true
+      l7Part.value++
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[7] = (levelAttempts.value[7] || 0) + 1
+      const duration = levelStartTime.value[7] ? Math.floor((Date.now() - levelStartTime.value[7]) / 1000) : 0
+      store.recordEvent('challenge_pass', 7, undefined, { attempts: levelAttempts.value[7], duration_seconds: duration })
+      applyBoost(7)
+    }
+  } else {
+    modalSuccess.value = false
+    showModal.value = true
+    levelAttempts.value[7] = (levelAttempts.value[7] || 0) + 1
+    store.recordEvent('challenge_error', 7, l7Part.value, { category: 'SQL填空错误', description: `第${l7Part.value}部分填写错误`, ability_dim: '数据库安全' })
+  }
+}
+
+// ===== Level 8: 备份与恢复（排序） =====
+const l8Task = ref(1)
+
+const l8TasksData: Record<number, { steps: string[]; answer: string[] }> = {
+  1: {
+    steps: ['gs_dump', '-U', 'postgres', '-W', '-d', 'bankdb', '-f', '/backup/bankdb.sql', '-p', '5432'],
+    answer: ['gs_dump', '-U', 'postgres', '-W', '-d', 'bankdb', '-p', '5432', '-f', '/backup/bankdb.sql'],
+  },
+  2: {
+    steps: ['gsql', '-U', 'postgres', '-W', '-d', 'bankdb', '-p', '5432', '-f', '/backup/bankdb.sql'],
+    answer: ['gsql', '-U', 'postgres', '-W', '-d', 'bankdb', '-p', '5432', '-f', '/backup/bankdb.sql'],
+  },
+}
+
+const l8CurrentAvailable = computed(() => {
+  const data = l8TasksData[l8Task.value]
+  if (!data) return []
+  const slots = l8Slots8.value[l8Task.value] || []
+  return data.steps.map((text, i) => {
+    const used = slots.some(s => s.filled && s.value === text && s._srcIdx === i)
+    return { text, used }
+  })
+})
+
+const l8CurrentSlots = computed(() => l8Slots8.value[l8Task.value] || [])
+
+const l8Slots8 = ref<Record<number, { filled: boolean; value: string; checked: boolean; correct: boolean; _srcIdx: number }[]>>({})
+
+function resetLevel8() {
+  showModal.value = false
+  l8Task.value = 1
+  l8Slots8.value = {}
+  for (const t of [1, 2]) {
+    const data = l8TasksData[t]
+    l8Slots8.value[t] = data.answer.map(() => ({ filled: false, value: '', checked: false, correct: false, _srcIdx: -1 }))
+  }
+}
+
+let l8DragIdx: number | null = null
+
+function onDragStartL8(_e: DragEvent, idx: number) { l8DragIdx = idx }
+
+function onDropL8(_e: DragEvent, slotIdx: number) {
+  if (l8DragIdx === null) return
+  const data = l8TasksData[l8Task.value]
+  if (!data) return
+  const stepText = data.steps[l8DragIdx]
+  const slots = [...(l8Slots8.value[l8Task.value] || [])]
+  if (slots[slotIdx].filled) return
+  slots[slotIdx] = { filled: true, value: stepText, checked: false, correct: false, _srcIdx: l8DragIdx }
+  l8Slots8.value[l8Task.value] = slots
+  l8DragIdx = null
+}
+
+function removeL8Slot(slotIdx: number) {
+  const slots = [...(l8Slots8.value[l8Task.value] || [])]
+  slots[slotIdx] = { filled: false, value: '', checked: false, correct: false, _srcIdx: -1 }
+  l8Slots8.value[l8Task.value] = slots
+}
+
+function checkLevel8Task() {
+  const data = l8TasksData[l8Task.value]
+  if (!data) return
+  const slots = l8Slots8.value[l8Task.value] || []
+  let allCorrect = true
+  const newSlots = slots.map((s, i) => {
+    const correct = s.filled && s.value === data.answer[i]
+    if (!correct) allCorrect = false
+    return { ...s, checked: true, correct }
+  })
+  l8Slots8.value[l8Task.value] = newSlots
+
+  if (allCorrect) {
+    if (l8Task.value < 2) {
+      modalSuccess.value = true
+      showModal.value = true
+      l8Task.value++
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[8] = (levelAttempts.value[8] || 0) + 1
+      const duration = levelStartTime.value[8] ? Math.floor((Date.now() - levelStartTime.value[8]) / 1000) : 0
+      store.recordEvent('challenge_pass', 8, undefined, { attempts: levelAttempts.value[8], duration_seconds: duration })
+      applyBoost(8)
+    }
+  } else {
+    modalSuccess.value = false
+    showModal.value = true
+    levelAttempts.value[8] = (levelAttempts.value[8] || 0) + 1
+    store.recordEvent('challenge_error', 8, l8Task.value, { category: '命令排序错误', description: `第${l8Task.value}题排序不正确`, ability_dim: '数据库运维' })
+  }
+}
+
+// ===== Level 9: Bug猎人（仿写修正） =====
+const l9Task = ref(1)
+const l9Answer = ref('')
+const l9Feedback = ref('')
+
+interface L9TaskDef { ref: string[]; desc: string; validate: (sql: string) => { correct: boolean; feedback?: string } }
+
+const l9Tasks: Record<number, L9TaskDef> = {
+  1: {
+    ref: ['-- Bug：INSERT语句列数与值数不匹配', 'INSERT INTO deposit (savingName)', "VALUES ('定期一年', '存款期是1年');"],
+    desc: '找出Bug并修正：deposit表有savingName和descrip两列，但INSERT只列了1列却插入了2个值',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasInsert = s.includes('INSERT INTO DEPOSIT')
+      const hasBothCols = s.includes('SAVINGNAME') && s.includes('DESCRIP')
+      if (!hasInsert) return { correct: false, feedback: '请使用INSERT INTO deposit语句' }
+      if (!hasBothCols) return { correct: false, feedback: '列名列表应包含savingName和descrip两列' }
+      return { correct: true }
+    },
+  },
+  2: {
+    ref: ['-- Bug：UPDATE缺少WHERE子句', 'UPDATE cardInfo', "SET isreportloss = '是';"],
+    desc: '找出Bug并修正：这条UPDATE会修改所有银行卡的挂失状态，应该只修改指定卡号',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasUpdate = s.includes('UPDATE CARDINFO')
+      const hasSet = s.includes('ISREPORTLOSS') && s.includes('是')
+      const hasWhere = s.includes('WHERE') && s.includes('CARDID')
+      if (!hasUpdate) return { correct: false, feedback: '请使用UPDATE cardInfo语句' }
+      if (!hasSet) return { correct: false, feedback: 'SET子句应设置isreportloss' }
+      if (!hasWhere) return { correct: false, feedback: '必须添加WHERE子句限定修改范围！' }
+      return { correct: true }
+    },
+  },
+  3: {
+    ref: ['-- Bug：SELECT * 查询不必要的大字段', 'SELECT * FROM tradeInfo', "WHERE tradeType = '存入';"],
+    desc: '找出Bug并修正：tradeInfo表有remark(TEXT大字段)列，查询时不应使用SELECT *',
+    validate(sql: string) {
+      const s = sql.replace(/\s+/g, ' ').trim().toUpperCase()
+      const hasSelect = s.includes('SELECT') && !s.includes('SELECT *')
+      const hasFrom = s.includes('FROM') && s.includes('TRADEINFO')
+      if (!hasSelect) return { correct: false, feedback: '不要使用SELECT *，只查询需要的列' }
+      if (!hasFrom) return { correct: false, feedback: '请从tradeInfo表查询' }
+      return { correct: true }
+    },
+  },
+}
+
+const l9CurrentRef = computed(() => l9Tasks[l9Task.value]?.ref || [])
+const l9CurrentDesc = computed(() => l9Tasks[l9Task.value]?.desc || '')
+
+function resetLevel9() {
+  showModal.value = false
+  l9Task.value = 1
+  l9Answer.value = ''
+  l9Feedback.value = ''
+}
+
+function checkLevel9Task() {
+  const task = l9Tasks[l9Task.value]
+  if (!task) return
+  const result = task.validate(l9Answer.value)
+  if (result.correct) {
+    if (l9Task.value < 3) {
+      modalSuccess.value = true
+      showModal.value = true
+      l9Task.value++
+      l9Answer.value = ''
+      l9Feedback.value = ''
+    } else {
+      modalSuccess.value = true
+      showModal.value = true
+      levelAttempts.value[9] = (levelAttempts.value[9] || 0) + 1
+      const duration = levelStartTime.value[9] ? Math.floor((Date.now() - levelStartTime.value[9]) / 1000) : 0
+      store.recordEvent('challenge_pass', 9, undefined, { attempts: levelAttempts.value[9], duration_seconds: duration })
+      applyBoost(9)
+    }
+  } else {
+    modalSuccess.value = false
+    l9Feedback.value = result.feedback || ''
+    showModal.value = true
+    levelAttempts.value[9] = (levelAttempts.value[9] || 0) + 1
+    store.recordEvent('challenge_error', 9, l9Task.value, { category: 'Bug修正错误', description: `第${l9Task.value}题修正不正确`, ability_dim: 'SQL编程与优化' })
   }
 }
 
@@ -1072,4 +2008,21 @@ onMounted(async () => {
 .l3-ref-line:empty { height: 1.8em; }
 .l3-editor { flex: 1; padding: 16px; background: transparent; border: none; color: #89b4fa; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 13px; line-height: 1.8; resize: none; outline: none; }
 .l3-editor::placeholder { color: #585b70; }
+.l4-workspace { display: flex; gap: 20px; height: calc(100vh - var(--header-height) - 280px); min-height: 380px; }
+.l4-code-panel { flex: 1; display: flex; flex-direction: column; background: #1e1e2e; border-radius: 10px; overflow: hidden; border: 1px solid #313244; }
+.l4-pieces-panel { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.l4-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #181825; font-size: 13px; font-weight: 600; color: #cdd6f4; }
+.l4-code-body { flex: 1; padding: 16px; overflow-y: auto; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 13px; line-height: 1.8; }
+.l4-slot-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin-bottom: 4px; border-radius: 6px; background: rgba(137,180,250,0.05); border: 1px dashed #45475a; min-height: 36px; }
+.l4-slot-row.correct { border-color: #a6e3a1; background: rgba(166,227,161,0.1); }
+.l4-slot-row.wrong { border-color: #f38ba8; background: rgba(243,139,168,0.1); }
+.l4-empty-slot { color: #585b70; font-size: 12px; flex: 1; }
+.l4-filled-code { color: #89b4fa; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 13px; flex: 1; }
+.l4-remove-btn { background: none; border: none; color: #f38ba8; font-size: 14px; cursor: pointer; padding: 0 4px; }
+.l4-pieces-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.l4-piece { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; cursor: grab; transition: all 0.15s; background: #f8fafc; }
+.l4-piece:hover { border-color: var(--primary); background: #f0f7ff; }
+.l4-piece.used { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+.l4-piece code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 12px; color: #1e293b; }
+.l5-step-num { color: #585b70; font-size: 14px; font-weight: 700; min-width: 20px; }
 </style>

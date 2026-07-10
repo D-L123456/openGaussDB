@@ -19,9 +19,6 @@ class Settings(BaseSettings):
 
     docx_dir: str = ""
 
-    jwt_secret_key: str = "opengauss-agent-secret-key-change-in-production"
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 1440
 
     class Config:
         env_file = ".env"

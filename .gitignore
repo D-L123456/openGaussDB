@@ -5,6 +5,7 @@ __pycache__/
 *.db
 *.sqlite3
 *.backup
+*.sql
 chroma_data/
 node_modules/
 dist/
@@ -16,6 +17,3 @@ dist/
 *.swo
 *.log
 .codeartsdoer/
-test_*.py
-check_*.py
-debug_*.py

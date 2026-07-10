@@ -5,8 +5,8 @@
       :class="{ selected: isSelected, recommended: isRecommended }"
       @click="toggle"
     >
-      <span class="expand-icon" v-if="node.children?.length" @click.stop="expanded = !expanded">
-        <svg :class="{ rotated: expanded }" width="10" height="10" viewBox="0 0 10 10">
+      <span class="expand-icon" v-if="node.children?.length" @click.stop="toggleExpand">
+        <svg :class="{ rotated: isExpanded }" width="10" height="10" viewBox="0 0 10 10">
           <path d="M3 1L7 5L3 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </span>
@@ -14,7 +14,7 @@
       <span class="node-title" :class="{ selected: isSelected, 'has-content': node.content }">{{ node.title }}</span>
       <span v-if="isRecommended" class="star-badge" title="智能推荐">★</span>
     </div>
-    <div v-if="expanded && node.children?.length" class="node-children">
+    <div v-if="isExpanded && node.children?.length" class="node-children">
       <tree-node
         v-for="child in node.children"
         :key="child.id"
@@ -22,14 +22,16 @@
         :depth="depth + 1"
         :selected-id="selectedId"
         :recommended-ids="recommendedIds"
+        :expanded-ids="expandedIds"
         @select="$emit('select', $event)"
+        @toggle-expand="$emit('toggle-expand', $event)"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { KnowledgeNode } from '../api'
 
 const props = defineProps<{
@@ -37,13 +39,18 @@ const props = defineProps<{
   depth: number
   selectedId?: string
   recommendedIds?: Set<string>
+  expandedIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
   select: [node: KnowledgeNode]
+  'toggle-expand': [nodeId: string]
 }>()
 
-const expanded = ref(props.depth < 2)
+const isExpanded = computed(() => {
+  if (!props.expandedIds) return false
+  return props.expandedIds.has(props.node.id)
+})
 
 const isSelected = computed(() => props.selectedId === props.node.id)
 
@@ -54,9 +61,13 @@ const isRecommended = computed(() => {
 
 function toggle() {
   if (props.node.children?.length) {
-    expanded.value = true
+    emit('toggle-expand', props.node.id)
   }
   emit('select', props.node)
+}
+
+function toggleExpand() {
+  emit('toggle-expand', props.node.id)
 }
 </script>
 

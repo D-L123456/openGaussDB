@@ -224,7 +224,7 @@ function eventLabel(t: Record<string, any>) {
   if (type === 'sql_error') return 'SQL练习出错'
   if (type === 'sql_pass') return 'SQL练习通过'
   if (type === 'chat_ask') return '知识问答'
-  if (type === 'knowledge_browse') return '浏览知识树'
+  if (type === 'knowledge_browse') return '浏览知识体系'
   return type
 }
 

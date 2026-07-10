@@ -1,81 +1,17 @@
 import os
-import re
 import logging
-import hashlib
 
 import docx
-from lxml import etree
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.knowledge import KnowledgeNode
-from app.services.vector_store import vector_store
+from app.core.docx_utils import natural_sort_key, extract_images_from_para, clean_figure_references, IMAGES_DIR
 
 logger = logging.getLogger(__name__)
 
-NSMAP = {
-    "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
-
-IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app", "data", "images")
-
-
-def natural_sort_key(s: str) -> list:
-    def convert(text):
-        return int(text) if text.isdigit() else text.lower()
-    return [convert(c) for c in re.split(r'(\d+)', s)]
-
-
-def extract_images_from_para(para, doc, chapter_name, para_idx) -> list[str]:
-    image_refs = []
-    blips = para._element.findall('.//a:blip', NSMAP)
-    for blip in blips:
-        rid = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
-        if not rid:
-            continue
-        try:
-            rel = doc.part.rels[rid]
-            image_blob = rel.target_part.blob
-            content_type = rel.target_part.content_type
-            ext_map = {
-                'image/png': '.png',
-                'image/jpeg': '.jpg',
-                'image/gif': '.gif',
-                'image/bmp': '.bmp',
-                'image/tiff': '.tiff',
-                'image/x-emf': '.emf',
-                'image/x-wmf': '.wmf',
-            }
-            ext = ext_map.get(content_type, '.png')
-            img_hash = hashlib.md5(image_blob).hexdigest()[:12]
-            img_filename = f"{chapter_name}_{para_idx}_{img_hash}{ext}"
-            img_path = os.path.join(IMAGES_DIR, img_filename)
-            if not os.path.exists(img_path):
-                with open(img_path, 'wb') as f:
-                    f.write(image_blob)
-            url_safe_name = img_filename.replace(" ", "%20")
-            image_refs.append(f"![图片](/images/{url_safe_name})")
-        except Exception as e:
-            logger.warning(f"Failed to extract image: {e}")
-    return image_refs
-
-
-def clean_figure_references(text: str) -> str:
-    text = re.sub(r'如[图图]\s*\d+[\.\d]*\s*所[示述]', '', text)
-    text = re.sub(r'[见参看][图图]\s*\d+[\.\d]*', '', text)
-    text = re.sub(r'[上下]图\s*\d+[\.\d]*', '', text)
-    text = re.sub(r'图\s*\d+[\.\d]*\s*[所示]', '', text)
-    text = re.sub(r'\s{2,}', ' ', text)
-    return text.strip()
-
 
 class KnowledgeTreeService:
-    def __init__(self):
-        self.vector_store = vector_store
-
     async def build_tree(self, docx_dir: str, db: AsyncSession) -> dict:
         os.makedirs(IMAGES_DIR, exist_ok=True)
         files = sorted([f for f in os.listdir(docx_dir) if f.endswith(".docx")], key=natural_sort_key)
@@ -116,9 +52,7 @@ class KnowledgeTreeService:
 
             for para_idx, para in enumerate(doc.paragraphs):
                 text = para.text.strip()
-
-                image_refs = extract_images_from_para(para, doc, chapter_name, para_idx)
-
+                image_refs = extract_images_from_para(para, doc, chapter_name, para_idx, use_markdown=True)
                 style_name = para.style.name if para.style else ""
 
                 if "Heading 2" in style_name:
@@ -158,15 +92,12 @@ class KnowledgeTreeService:
 
                 else:
                     parts_to_add = []
-
                     if image_refs:
                         parts_to_add.extend(image_refs)
-
                     if text:
                         cleaned = clean_figure_references(text)
                         if cleaned:
                             parts_to_add.append(cleaned)
-
                     if not parts_to_add:
                         continue
 
@@ -262,7 +193,8 @@ class KnowledgeTreeService:
         return root_nodes
 
     async def search_knowledge(self, query: str, top_k: int = 5) -> list[dict]:
-        results = await self.vector_store.search(query, top_k=top_k)
+        from app.services.vector_store import vector_store
+        results = await vector_store.search(query, top_k=top_k)
         search_results = []
         for r in results:
             meta = r["metadata"]

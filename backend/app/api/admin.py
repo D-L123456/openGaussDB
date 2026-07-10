@@ -45,7 +45,7 @@ async def ingest_documents(
             logger.info(f"已存入 {count} 个向量")
 
             await knowledge_tree_service.build_tree(dir_path, db)
-            logger.info("知识树构建完成")
+            logger.info("知识体系构建完成")
 
         except Exception as e:
             logger.error(f"文档导入失败: {e}")

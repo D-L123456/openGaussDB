@@ -2,6 +2,17 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { chatApi, type ChatSession, type ChatMessage } from '../api'
 
+function uuid(): string {
+  try {
+    return uuid()
+  } catch {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+    })
+  }
+}
+
 export const useChatStore = defineStore('chat', () => {
   const sessions = ref<ChatSession[]>([])
   const currentSessionId = ref<string | null>(null)
@@ -60,7 +71,7 @@ export const useChatStore = defineStore('chat', () => {
       } catch (e) {
         console.error('创建会话失败:', e)
         messages.value.push({
-          id: crypto.randomUUID(),
+          id: uuid(),
           session_id: '',
           role: 'assistant',
           content: '创建对话失败，请检查后端服务是否正常运行。',
@@ -72,7 +83,7 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     messages.value.push({
-      id: crypto.randomUUID(),
+      id: uuid(),
       session_id: sessionId,
       role: 'user',
       content,
@@ -84,7 +95,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const { data } = await chatApi.ask(content, sessionId)
       messages.value.push({
-        id: crypto.randomUUID(),
+        id: uuid(),
         session_id: data.session_id,
         role: 'assistant',
         content: data.answer,
@@ -99,7 +110,7 @@ export const useChatStore = defineStore('chat', () => {
       console.error('请求失败:', e)
       const errorMsg = e?.response?.data?.detail || e?.message || '请求失败，请稍后重试'
       messages.value.push({
-        id: crypto.randomUUID(),
+        id: uuid(),
         session_id: sessionId,
         role: 'assistant',
         content: `抱歉，请求失败：${errorMsg}`,
