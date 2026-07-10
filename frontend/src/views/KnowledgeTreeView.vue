@@ -155,15 +155,19 @@ function toggleExpand(nodeId: string) {
 
 const sectionQuizKey = computed(() => {
   if (!selectedNode.value) return ''
-  const ch = selectedNode.value.chapter || ''
+  const ch = (selectedNode.value.chapter || '').replace(/-已同步$/, '')
   const sec = selectedNode.value.section || ''
   return ch + '||' + sec
 })
 
 const sectionQuiz = computed<SectionQuiz | null>(() => {
   if (!selectedNode.value) return null
-  const key = sectionQuizKey.value
-  return quizMap[key] || null
+  const ch = (selectedNode.value.chapter || '').replace(/-已同步$/, '')
+  const sec = selectedNode.value.section || ''
+  const h2Sec = sec.split(' > ')[0]
+  const key1 = ch + '||' + sec
+  const key2 = ch + '||' + h2Sec
+  return quizMap[key1] || quizMap[key2] || null
 })
 
 const quizMap: Record<string, SectionQuiz> = {
